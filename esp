@@ -1,0 +1,198 @@
+-- CLIENT-SIDED STREAMING-SAFE ESP
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local ESP_ENABLED = true
+local ACTIVE = {}
+
+-- ===== TOGGLE (RightShift) =====
+UserInputService.InputBegan:Connect(function(input, gp)
+	if gp then return end
+	if input.KeyCode == Enum.KeyCode.RightShift then
+		ESP_ENABLED = not ESP_ENABLED
+		for _, data in pairs(ACTIVE) do
+			for _, obj in pairs(data) do
+				if obj and obj.SetVisible then
+					obj:SetVisible(ESP_ENABLED)
+				elseif typeof(obj) == "Instance" then
+					obj.Enabled = ESP_ENABLED
+				end
+			end
+		end
+	end
+end)
+
+-- ===== SAFE PART WAIT =====
+local function waitForParts(char)
+	local t = os.clock() + 10
+	while os.clock() < t do
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		local head = char:FindFirstChild("Head")
+		local root = char:FindFirstChild("HumanoidRootPart")
+		if hum and head and root then
+			return hum, head, root
+		end
+		task.wait(0.1)
+	end
+end
+
+-- ===== DRAWING LINE =====
+local function newLine()
+	local l = Drawing.new("Line")
+	l.Thickness = 2
+	l.Color = Color3.new(1,1,1)
+	l.Transparency = 1
+	l.Visible = false
+	return l
+end
+
+-- ===== APPLY ESP =====
+local function applyESP(player, char)
+	if player == LocalPlayer or ACTIVE[char] then return end
+
+	local hum, head, root = waitForParts(char)
+	if not hum then return end
+
+	-- ===== Highlight =====
+	local hl = Instance.new("Highlight")
+	hl.Adornee = char
+	hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	hl.FillTransparency = 0.5
+	hl.OutlineTransparency = 0
+	hl.FillColor = player.TeamColor.Color
+	hl.Enabled = ESP_ENABLED
+	hl.Parent = workspace
+
+	player:GetPropertyChangedSignal("TeamColor"):Connect(function()
+		hl.FillColor = player.TeamColor.Color
+	end)
+
+	-- ===== Billboard =====
+	local gui = Instance.new("BillboardGui")
+	gui.Adornee = head
+	gui.Size = UDim2.new(0, 200, 0, 70)
+	gui.StudsOffset = Vector3.new(0, 3, 0)
+	gui.AlwaysOnTop = true
+	gui.Enabled = ESP_ENABLED
+	gui.Parent = workspace
+
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1, 0, 0.45, 0)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.TextStrokeTransparency = 0
+	nameLabel.TextScaled = true
+	nameLabel.Font = Enum.Font.SourceSansBold
+	nameLabel.TextColor3 = Color3.new(1,1,1)
+	nameLabel.Parent = gui
+
+	local barBG = Instance.new("Frame")
+	barBG.Size = UDim2.new(1, -10, 0.15, 0)
+	barBG.Position = UDim2.new(0, 5, 0.55, 0)
+	barBG.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	barBG.BorderSizePixel = 0
+	barBG.Parent = gui
+
+	local barFill = Instance.new("Frame")
+	barFill.Size = UDim2.new(1, 0, 1, 0)
+	barFill.BorderSizePixel = 0
+	barFill.BackgroundColor3 = Color3.fromRGB(0,255,0)
+	barFill.Parent = barBG
+
+	-- ===== Skeleton =====
+	local bones = {
+		{"Head","UpperTorso"},
+		{"UpperTorso","LowerTorso"},
+		{"UpperTorso","LeftUpperArm"},{"LeftUpperArm","LeftLowerArm"},{"LeftLowerArm","LeftHand"},
+		{"UpperTorso","RightUpperArm"},{"RightUpperArm","RightLowerArm"},{"RightLowerArm","RightHand"},
+		{"LowerTorso","LeftUpperLeg"},{"LeftUpperLeg","LeftLowerLeg"},{"LeftLowerLeg","LeftFoot"},
+		{"LowerTorso","RightUpperLeg"},{"RightUpperLeg","RightLowerLeg"},{"RightLowerLeg","RightFoot"}
+	}
+
+	local skeleton = {}
+	for _ = 1, #bones do table.insert(skeleton, newLine()) end
+
+	-- ===== Snapline =====
+	local snapline = newLine()
+
+	-- ===== Update =====
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		if not char.Parent or hum.Health <= 0 then return end
+
+		local dist = (Camera.CFrame.Position - root.Position).Magnitude
+		nameLabel.Text = string.format(
+			"%s [%s]\n%.0f studs",
+			player.Name,
+			player.Team and player.Team.Name or "No Team",
+			dist
+		)
+
+		local hp = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+		barFill.Size = UDim2.new(hp, 0, 1, 0)
+		barFill.BackgroundColor3 = Color3.fromRGB(255*(1-hp),255*hp,0)
+
+		-- Skeleton
+		for i,b in ipairs(bones) do
+			local p1 = char:FindFirstChild(b[1])
+			local p2 = char:FindFirstChild(b[2])
+			local line = skeleton[i]
+			if p1 and p2 then
+				local v1, on1 = Camera:WorldToViewportPoint(p1.Position)
+				local v2, on2 = Camera:WorldToViewportPoint(p2.Position)
+				line.Visible = ESP_ENABLED and on1 and on2
+				if line.Visible then
+					line.From = Vector2.new(v1.X, v1.Y)
+					line.To = Vector2.new(v2.X, v2.Y)
+					line.Color = player.TeamColor.Color
+				end
+			else
+				line.Visible = false
+			end
+		end
+
+		-- Snapline
+		local v, on = Camera:WorldToViewportPoint(root.Position)
+		snapline.Visible = ESP_ENABLED and on
+		if snapline.Visible then
+			snapline.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+			snapline.To = Vector2.new(v.X, v.Y)
+			snapline.Color = player.TeamColor.Color
+		end
+	end)
+
+	-- Cleanup
+	char.AncestryChanged:Connect(function(_, p)
+		if not p then
+			conn:Disconnect()
+			hl:Destroy()
+			gui:Destroy()
+			for _,l in ipairs(skeleton) do l:Remove() end
+			snapline:Remove()
+			ACTIVE[char] = nil
+		end
+	end)
+
+	ACTIVE[char] = {hl, gui, skeleton, snapline}
+end
+
+-- ===== PLAYER HANDLING =====
+local function setup(p)
+	p.CharacterAdded:Connect(function(c)
+		task.delay(0.2, function()
+			applyESP(p, c)
+		end)
+	end)
+	if p.Character then
+		task.delay(0.2, function()
+			applyESP(p, p.Character)
+		end)
+	end
+end
+
+for _,p in ipairs(Players:GetPlayers()) do setup(p) end
+Players.PlayerAdded:Connect(setup)
