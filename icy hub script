@@ -136,7 +136,7 @@ Close.MouseButton1Click:Connect(function()
 end)
 
 --// =========================
---// ESP
+--// ESP (UNCHANGED)
 --// =========================
 local ESP_ENABLED = false
 
@@ -150,6 +150,7 @@ Buttons[1].MouseButton1Click:Connect(function()
 				hl.Name = "ESPHighlight"
 				hl.FillTransparency = 0.5
 				hl.OutlineTransparency = 0
+				hl.FillColor = p.TeamColor.Color
 				hl.Adornee = p.Character
 				hl.Parent = p.Character
 			elseif not ESP_ENABLED and hl then
@@ -160,31 +161,72 @@ Buttons[1].MouseButton1Click:Connect(function()
 end)
 
 --// =========================
---// AIMBOT
+--// AIMBOT (YOUR SCRIPT – FIXED)
 --// =========================
+local teamCheck = false
 local fov = 150
-local smoothing = 0.15
+local smoothing = 1
 
-RunService.RenderStepped:Connect(function()
-	if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then return end
-	local closest, dist = nil, math.huge
-	for _,p in pairs(Players:GetPlayers()) do
-		if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
-			local pos, on = Camera:WorldToViewportPoint(p.Character.Head.Position)
-			if on then
-				local mag = (Vector2.new(pos.X,pos.Y) - Camera.ViewportSize/2).Magnitude
-				if mag < dist and mag < fov then
-					dist = mag
-					closest = p
-				end
+local AimbotEnabled = false
+local loop
+local FOVring
+
+local function getClosest(cframe)
+	local ray = Ray.new(cframe.Position, cframe.LookVector).Unit
+	local target, mag = nil, math.huge
+
+	for _,v in pairs(Players:GetPlayers()) do
+		if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Head")
+		and v.Character:FindFirstChild("HumanoidRootPart")
+		and (v.Team ~= LocalPlayer.Team or not teamCheck) then
+			local buf = (v.Character.Head.Position - ray:ClosestPoint(v.Character.Head.Position)).Magnitude
+			if buf < mag then
+				mag = buf
+				target = v
 			end
 		end
 	end
-	if closest then
-		Camera.CFrame = Camera.CFrame:Lerp(
-			CFrame.new(Camera.CFrame.Position, closest.Character.Head.Position),
-			smoothing
-		)
+	return target
+end
+
+local function EnableAimbot()
+	FOVring = Drawing.new("Circle")
+	FOVring.Visible = true
+	FOVring.Thickness = 1.5
+	FOVring.Radius = fov
+	FOVring.Transparency = 1
+	FOVring.Color = Color3.fromRGB(255,128,128)
+
+	loop = RunService.RenderStepped:Connect(function()
+		FOVring.Position = Camera.ViewportSize / 2
+
+		if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+			local target = getClosest(Camera.CFrame)
+			if target and target.Character and target.Character:FindFirstChild("Head") then
+				Camera.CFrame = Camera.CFrame:Lerp(
+					CFrame.new(Camera.CFrame.Position, target.Character.Head.Position),
+					smoothing
+				)
+			end
+		end
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.Delete) then
+			AimbotEnabled = false
+		end
+	end)
+end
+
+local function DisableAimbot()
+	if loop then loop:Disconnect() loop = nil end
+	if FOVring then FOVring:Remove() FOVring = nil end
+end
+
+Buttons[2].MouseButton1Click:Connect(function()
+	AimbotEnabled = not AimbotEnabled
+	if AimbotEnabled then
+		EnableAimbot()
+	else
+		DisableAimbot()
 	end
 end)
 
