@@ -1,0 +1,155 @@
+--// SERVICES
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local Player = Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+
+--// GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SpeedGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = Player:WaitForChild("PlayerGui")
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 250, 0, 150)
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -75)
+MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+--// DRAGGING SUPPORT
+local dragging = false
+local dragInput, mousePos, framePos
+local ignoreDragging = false -- Prevent conflicts with slider
+
+local function update(input)
+    local delta = input.Position - mousePos
+    MainFrame.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
+end
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and not ignoreDragging then
+        dragging = true
+        mousePos = input.Position
+        framePos = MainFrame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+--// CLOSE BUTTON
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 25, 0, 25)
+CloseButton.Position = UDim2.new(1, -30, 0, 5)
+CloseButton.Text = "X"
+CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseButton.TextColor3 = Color3.new(1,1,1)
+CloseButton.Parent = MainFrame
+
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+--// MINIMIZE BUTTON
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
+MinimizeButton.Position = UDim2.new(1, -60, 0, 5)
+MinimizeButton.Text = "_"
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+MinimizeButton.TextColor3 = Color3.new(1,1,1)
+MinimizeButton.Parent = MainFrame
+
+local minimized = false
+MinimizeButton.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    MainFrame.Size = minimized and UDim2.new(0, 250, 0, 40) or UDim2.new(0, 250, 0, 150)
+end)
+
+--// TITLE
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -70, 0, 25)
+Title.Position = UDim2.new(0, 10, 0, 5)
+Title.BackgroundTransparency = 1
+Title.Text = "Speed Modifier"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 18
+Title.Parent = MainFrame
+
+--// SLIDER
+local SliderFrame = Instance.new("Frame")
+SliderFrame.Size = UDim2.new(0, 220, 0, 40)
+SliderFrame.Position = UDim2.new(0, 15, 0, 50)
+SliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SliderFrame.Parent = MainFrame
+
+local SliderLabel = Instance.new("TextLabel")
+SliderLabel.Size = UDim2.new(1, 0, 0, 20)
+SliderLabel.Position = UDim2.new(0, 0, 0, 0)
+SliderLabel.BackgroundTransparency = 1
+SliderLabel.Text = "WalkSpeed: 16"
+SliderLabel.TextColor3 = Color3.new(1,1,1)
+SliderLabel.Font = Enum.Font.SourceSans
+SliderLabel.TextSize = 16
+SliderLabel.Parent = SliderFrame
+
+local SliderBar = Instance.new("Frame")
+SliderBar.Size = UDim2.new(1, -10, 0, 10)
+SliderBar.Position = UDim2.new(0, 5, 0, 25)
+SliderBar.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+SliderBar.Parent = SliderFrame
+
+local SliderHandle = Instance.new("Frame")
+SliderHandle.Size = UDim2.new(0, 15, 1, 0)
+SliderHandle.Position = UDim2.new(0, 0, 0, 0)
+SliderHandle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+SliderHandle.Parent = SliderBar
+
+--// SLIDER LOGIC
+local draggingSlider = false
+
+SliderHandle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingSlider = true
+        ignoreDragging = true -- Prevent GUI drag while moving slider
+    end
+end)
+
+SliderHandle.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingSlider = false
+        ignoreDragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local relativeX = math.clamp(input.Position.X - SliderBar.AbsolutePosition.X, 0, SliderBar.AbsoluteSize.X)
+        SliderHandle.Position = UDim2.new(0, relativeX, 0, 0)
+        local speed = math.floor((relativeX / SliderBar.AbsoluteSize.X) * 100)
+        Humanoid.WalkSpeed = speed > 0 and speed or 1
+        SliderLabel.Text = "WalkSpeed: "..Humanoid.WalkSpeed
+    end
+end)
+
+-- Optional: set default speed
+Humanoid.WalkSpeed = 16
