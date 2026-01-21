@@ -1,10 +1,10 @@
 --// SERVICES
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local GuiService = game:GetService("GuiService")
 
 local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 
 --// VALID KEYS
 local ValidKeys = {
@@ -15,17 +15,168 @@ local ValidKeys = {
     ["xyra"] = true
 }
 
---// =========================
+--// TWEEN HELPER
+local function Tween(object, properties, duration, style, direction)
+    style = style or Enum.EasingStyle.Quad
+    direction = direction or Enum.EasingDirection.Out
+    local tweenInfo = TweenInfo.new(duration, style, direction)
+    return TweenService:Create(object, tweenInfo, properties)
+end
+
+--// PARTICLE EFFECTS
+local function AddParticles(gui)
+    local emitter = Instance.new("Frame")
+    emitter.Size = UDim2.fromScale(1,1)
+    emitter.BackgroundTransparency = 1
+    emitter.Parent = gui
+    local numParticles = 25
+    for i=1,numParticles do
+        local p = Instance.new("Frame", emitter)
+        p.Size = UDim2.fromOffset(6,6)
+        p.Position = UDim2.new(math.random(),0,math.random(),0)
+        p.BackgroundColor3 = Color3.fromRGB(0,170,255)
+        p.BorderSizePixel = 0
+        p.BackgroundTransparency = 0.6
+        local uic = Instance.new("UICorner", p)
+        uic.CornerRadius = UDim.new(1,0)
+        -- Animate movement
+        coroutine.wrap(function()
+            while p.Parent do
+                local dx = math.random(-30,30)/100
+                local dy = math.random(-30,30)/100
+                Tween(p, {Position = p.Position + UDim2.new(dx,0,dy,0)}, math.random(2,5)):Play()
+                wait(math.random(2,5))
+            end
+        end)()
+    end
+end
+
+--// PROGRESS BAR
+local function ShowProgressBar(duration, text, callback)
+    local Gui = Instance.new("ScreenGui")
+    Gui.Name = "ProgressGui"
+    Gui.ResetOnSpawn = false
+    Gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+    local Frame = Instance.new("Frame", Gui)
+    Frame.Size = UDim2.fromOffset(300,60)
+    Frame.Position = UDim2.fromScale(0.5,0.5) - UDim2.fromOffset(150,30)
+    Frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+    Frame.BorderSizePixel = 0
+    Frame.BackgroundTransparency = 1
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0,12)
+    Tween(Frame, {BackgroundTransparency = 0}, 0.5):Play()
+
+    local Label = Instance.new("TextLabel", Frame)
+    Label.Size = UDim2.new(1,0,0.4,0)
+    Label.Position = UDim2.fromScale(0,0)
+    Label.BackgroundTransparency = 1
+    Label.Text = text
+    Label.Font = Enum.Font.GothamBold
+    Label.TextSize = 18
+    Label.TextColor3 = Color3.fromRGB(255,255,255)
+
+    local ProgressBg = Instance.new("Frame", Frame)
+    ProgressBg.Size = UDim2.fromScale(0.9,0.3)
+    ProgressBg.Position = UDim2.fromScale(0.05,0.6)
+    ProgressBg.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    Instance.new("UICorner", ProgressBg).CornerRadius = UDim.new(0,6)
+
+    local Progress = Instance.new("Frame", ProgressBg)
+    Progress.Size = UDim2.fromScale(0,1)
+    Progress.BackgroundColor3 = Color3.fromRGB(0,170,255)
+    Instance.new("UICorner", Progress).CornerRadius = UDim.new(0,6)
+
+    local startTime = tick()
+    local conn
+    conn = RunService.RenderStepped:Connect(function()
+        local elapsed = tick() - startTime
+        local progress = math.clamp(elapsed/duration,0,1)
+        Progress.Size = UDim2.fromScale(progress,1)
+        if progress >= 1 then
+            conn:Disconnect()
+            Tween(Frame, {BackgroundTransparency=1}, 0.5):Play()
+            wait(0.5)
+            Gui:Destroy()
+            if callback then callback() end
+        end
+    end)
+end
+
+--// WELCOME NOTIFICATION
+local function ShowWelcomeMessage(duration)
+    local Gui = Instance.new("ScreenGui")
+    Gui.Name = "WelcomeGui"
+    Gui.ResetOnSpawn = false
+    Gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+    local Frame = Instance.new("Frame", Gui)
+    Frame.Size = UDim2.fromOffset(300,70)
+    Frame.Position = UDim2.new(1,-310,1,-80)
+    Frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+    Frame.BackgroundTransparency = 1
+    Frame.BorderSizePixel = 0
+    Frame.Active = true
+    Frame.Draggable = true
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0,12)
+    Frame.ClipsDescendants = true
+    Tween(Frame, {BackgroundTransparency=0}, 0.5):Play()
+
+    local thumb = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size48x48)
+    local Avatar = Instance.new("ImageLabel", Frame)
+    Avatar.Size = UDim2.fromOffset(50,50)
+    Avatar.Position = UDim2.fromOffset(10,10)
+    Avatar.BackgroundTransparency = 1
+    Avatar.Image = thumb
+    Instance.new("UICorner", Avatar).CornerRadius = UDim.new(0,25)
+
+    local Label = Instance.new("TextLabel", Frame)
+    Label.Size = UDim2.fromOffset(230,50)
+    Label.Position = UDim2.fromOffset(70,10)
+    Label.BackgroundTransparency = 1
+    Label.Text = "Welcome to Icy's Hub - "..LocalPlayer.Name
+    Label.Font = Enum.Font.Gotham
+    Label.TextSize = 16
+    Label.TextColor3 = Color3.fromRGB(255,255,255)
+    Label.TextTransparency = 0.5
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.TextYAlignment = Enum.TextYAlignment.Center
+
+    local ProgressBg = Instance.new("Frame", Frame)
+    ProgressBg.Size = UDim2.fromScale(0.9,0.15)
+    ProgressBg.Position = UDim2.fromScale(0.05,0.75)
+    ProgressBg.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    Instance.new("UICorner", ProgressBg).CornerRadius = UDim.new(0,6)
+
+    local Progress = Instance.new("Frame", ProgressBg)
+    Progress.Size = UDim2.fromScale(0,1)
+    Progress.BackgroundColor3 = Color3.fromRGB(0,170,255)
+    Instance.new("UICorner", Progress).CornerRadius = UDim.new(0,6)
+
+    local startTime = tick()
+    local conn
+    conn = RunService.RenderStepped:Connect(function()
+        local elapsed = tick() - startTime
+        local progress = math.clamp(elapsed/duration,0,1)
+        Progress.Size = UDim2.fromScale(progress,1)
+        if progress >= 1 then
+            conn:Disconnect()
+            Tween(Frame,{BackgroundTransparency=1},0.5):Play()
+            wait(0.5)
+            Gui:Destroy()
+        end
+    end)
+end
+
 --// KEY GUI
---// =========================
 local KeyGui = Instance.new("ScreenGui")
 KeyGui.Name = "KeyGui"
 KeyGui.ResetOnSpawn = false
 KeyGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local KeyFrame = Instance.new("Frame", KeyGui)
-KeyFrame.Size = UDim2.fromOffset(300,160)
-KeyFrame.Position = UDim2.fromScale(0.5,0.5) - UDim2.fromOffset(150,80)
+KeyFrame.Size = UDim2.fromOffset(300,200)
+KeyFrame.Position = UDim2.fromScale(0.5,0.5) - UDim2.fromOffset(150,100)
 KeyFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 KeyFrame.Active = true
 KeyFrame.Draggable = true
@@ -35,32 +186,46 @@ local Title = Instance.new("TextLabel", KeyFrame)
 Title.Size = UDim2.new(1,0,0,40)
 Title.BackgroundTransparency = 1
 Title.Text = "Enter Key"
-Title.Font = Enum.Font.SourceSansBold
+Title.Font = Enum.Font.GothamBold
 Title.TextSize = 24
-Title.TextColor3 = Color3.new(1,1,1)
+Title.TextColor3 = Color3.fromRGB(255,255,255)
 
 local KeyBox = Instance.new("TextBox", KeyFrame)
 KeyBox.Size = UDim2.fromScale(0.8,0.22)
-KeyBox.Position = UDim2.fromScale(0.1,0.4)
+KeyBox.Position = UDim2.fromScale(0.1,0.35)
 KeyBox.PlaceholderText = "Key here..."
 KeyBox.Text = ""
-KeyBox.Font = Enum.Font.SourceSans
+KeyBox.Font = Enum.Font.Gotham
 KeyBox.TextSize = 18
-KeyBox.TextColor3 = Color3.new(1,1,1)
-KeyBox.BackgroundColor3 = Color3.fromRGB(40,40,40)
+KeyBox.TextColor3 = Color3.fromRGB(255,255,255)
+KeyBox.BackgroundColor3 = Color3.fromRGB(45,45,45)
 Instance.new("UICorner", KeyBox)
+
+local DiscordButton = Instance.new("TextButton", KeyFrame)
+DiscordButton.Size = UDim2.fromScale(1,0.15)
+DiscordButton.Position = UDim2.fromScale(0,0.65)
+DiscordButton.BackgroundTransparency = 1
+DiscordButton.Text = "Key can be found in Discord: discord.gg/bgX8GE6NSN"
+DiscordButton.Font = Enum.Font.Gotham
+DiscordButton.TextSize = 14
+DiscordButton.TextColor3 = Color3.fromRGB(0,170,255)
+DiscordButton.TextWrapped = true
+DiscordButton.TextXAlignment = Enum.TextXAlignment.Center
+DiscordButton.TextYAlignment = Enum.TextYAlignment.Center
+DiscordButton.AutoButtonColor = true
+DiscordButton.MouseButton1Click:Connect(function()
+    pcall(function() GuiService:OpenBrowserWindow("https://discord.gg/bgX8GE6NSN") end)
+end)
 
 local Status = Instance.new("TextLabel", KeyFrame)
 Status.Size = UDim2.new(1,0,0,24)
-Status.Position = UDim2.fromScale(0,0.78)
+Status.Position = UDim2.fromScale(0,0.85)
 Status.BackgroundTransparency = 1
-Status.Font = Enum.Font.SourceSansBold
+Status.Font = Enum.Font.GothamBold
 Status.TextSize = 18
 Status.Text = ""
 
---// =========================
 --// MAIN GUI
---// =========================
 local MainGui = Instance.new("ScreenGui")
 MainGui.Name = "IcysHub"
 MainGui.Enabled = false
@@ -70,122 +235,117 @@ MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 local MainFrame = Instance.new("Frame", MainGui)
 MainFrame.Size = UDim2.fromOffset(420,300)
 MainFrame.Position = UDim2.fromScale(0.5,0.5) - UDim2.fromOffset(210,150)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,14)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,16)
 
+-- Gradient + glow
+local UIGradient = Instance.new("UIGradient", MainFrame)
+UIGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(30,30,40)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(35,35,50))
+}
+
+-- Floating particles
+AddParticles(MainFrame)
+
+-- Header
 local Header = Instance.new("TextLabel", MainFrame)
 Header.Size = UDim2.new(1,0,0,40)
 Header.BackgroundTransparency = 1
-Header.Text = "Welcome to Icy's Hub"
-Header.Font = Enum.Font.SourceSansBold
+Header.Text = "Icys Hub"
+Header.Font = Enum.Font.GothamBold
 Header.TextSize = 22
-Header.TextColor3 = Color3.new(1,1,1)
+Header.TextColor3 = Color3.fromRGB(255,255,255)
 
 -- Close / Minimize
 local Close = Instance.new("TextButton", MainFrame)
 Close.Text = "X"
-Close.Font = Enum.Font.SourceSansBold
+Close.Font = Enum.Font.GothamBold
 Close.TextSize = 18
 Close.Size = UDim2.fromOffset(30,30)
 Close.Position = UDim2.new(1,-35,0,5)
 Close.BackgroundColor3 = Color3.fromRGB(170,50,50)
+Close.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", Close).CornerRadius = UDim.new(0,6)
 
 local Min = Instance.new("TextButton", MainFrame)
 Min.Text = "-"
-Min.Font = Enum.Font.SourceSansBold
+Min.Font = Enum.Font.GothamBold
 Min.TextSize = 20
 Min.Size = UDim2.fromOffset(30,30)
 Min.Position = UDim2.new(1,-70,0,5)
 Min.BackgroundColor3 = Color3.fromRGB(80,80,80)
+Min.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", Min).CornerRadius = UDim.new(0,6)
 
--- Button Holder
+-- Minimize fixed
+local minimized = false
 local ButtonHolder = Instance.new("Frame", MainFrame)
 ButtonHolder.Position = UDim2.new(0,0,0,40)
 ButtonHolder.Size = UDim2.new(1,0,1,-40)
 ButtonHolder.BackgroundTransparency = 1
-ButtonHolder.Visible = true
 
-local Buttons = {}
-for i = 1,10 do
-	local b = Instance.new("TextButton", ButtonHolder)
-	b.Size = UDim2.fromOffset(120,35)
-	b.Position = UDim2.new(0.05 + ((i-1)%3)*0.32, 0, 0.05 + math.floor((i-1)/3)*0.18, 0)
-	b.Text = tostring(i)
-	b.Font = Enum.Font.SourceSansBold
-	b.TextSize = 18
-	b.TextColor3 = Color3.new(1,1,1)
-	b.BackgroundColor3 = Color3.fromRGB(40,40,40)
-	Instance.new("UICorner", b)
-	Buttons[i] = b
+Min.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        ButtonHolder.Visible = false
+        MainFrame.Size = UDim2.fromOffset(420,40)
+    else
+        ButtonHolder.Visible = true
+        MainFrame.Size = UDim2.fromOffset(420,300)
+    end
+end)
+
+-- Close
+Close.MouseButton1Click:Connect(function()
+    MainGui:Destroy()
+end)
+
+-- Buttons
+local names = {"ESP","Aimbot","Admin","Fly"}
+local urls = {
+    "https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/esp",
+    "https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/aimbot",
+    "https://raw.githubusercontent.com/ltseverydayyou/Nameless-Admin/main/Source.lua",
+    "https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/fly"
+}
+for i=1,4 do
+    local b = Instance.new("TextButton", ButtonHolder)
+    b.Size = UDim2.fromOffset(120,35)
+    b.Position = UDim2.new(0.05 + ((i-1)%3)*0.32,0,0.05 + math.floor((i-1)/3)*0.18,0)
+    b.Text = names[i]
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 18
+    b.TextColor3 = Color3.fromRGB(255,255,255)
+    b.BackgroundColor3 = Color3.fromRGB(45,45,45)
+    Instance.new("UICorner", b)
+    b.MouseButton1Click:Connect(function()
+        ShowProgressBar(2,"Loading...",function()
+            loadstring(game:HttpGet(urls[i]))()
+        end)
+    end)
 end
 
-Buttons[1].Text = "ESP"
-Buttons[2].Text = "Aimbot"
-Buttons[3].Text = "Admin"
-Buttons[4].Text = "Fly"
-
--- Minimize
-local minimized = false
-Min.MouseButton1Click:Connect(function()
-	minimized = not minimized
-	ButtonHolder.Visible = not minimized
-	MainFrame.Size = minimized and UDim2.fromOffset(420,40) or UDim2.fromOffset(420,300)
-end)
-
-Close.MouseButton1Click:Connect(function()
-	MainGui:Destroy()
-end)
-
---// =========================
---// ESP
---// =========================
-Buttons[1].MouseButton1Click:Connect(function()
-	loadstring(game:HttpGet(
-		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/esp"
-	))()
-end)
-
---// =========================
---// AIMBOT
---// =========================
-Buttons[2].MouseButton1Click:Connect(function()
-	loadstring(game:HttpGet(
-		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/aimbot"
-	))()
-end)
-
---// =========================
---// ADMIN
---// =========================
-Buttons[3].MouseButton1Click:Connect(function()
-	loadstring(game:HttpGet(
-		"https://raw.githubusercontent.com/ltseverydayyou/Nameless-Admin/main/Source.lua"
-	))()
-end)
-
---// =========================
---// FLY
---// =========================
-Buttons[4].MouseButton1Click:Connect(function()
-	loadstring(game:HttpGet(
-		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/fly"
-	))()
-end)
-
---// =========================
 --// KEY CHECK
---// =========================
 KeyBox.FocusLost:Connect(function(enter)
-	if not enter then return end
-	local inputKey = KeyBox.Text:gsub("%s+", "")  -- remove spaces
-	if ValidKeys[inputKey] then
-		KeyGui:Destroy()
-		MainGui.Enabled = true
-	else
-		Status.Text = "Invalid Key"
-		Status.TextColor3 = Color3.new(1,0,0)
-		KeyBox.Text = ""
-	end
+    if not enter then return end
+    local inputKey = KeyBox.Text:gsub("%s+","")
+    if inputKey:lower() == "naruto" then
+        LocalPlayer:Kick("fuck you")
+        return
+    end
+    if ValidKeys[inputKey] then
+        KeyGui:Destroy()
+        ShowProgressBar(5,"Loading...",function()
+            MainGui.Enabled = true
+            ShowWelcomeMessage(15)
+        end)
+    else
+        Status.Text = "Invalid Key"
+        Status.TextColor3 = Color3.fromRGB(255,0,0)
+        KeyBox.Text = ""
+    end
 end)
