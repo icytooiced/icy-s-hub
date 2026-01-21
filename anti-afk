@@ -1,0 +1,40 @@
+--// SERVICES
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+--// CREATE SCREEN GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AntiAFKNotification"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
+
+--// CREATE NOTIFICATION FRAME
+local Notification = Instance.new("Frame")
+Notification.Size = UDim2.new(0, 200, 0, 40)
+Notification.Position = UDim2.new(1, -210, 0, 10) -- top-right corner
+Notification.BackgroundTransparency = 0.7
+Notification.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Notification.BorderSizePixel = 0
+Notification.Parent = ScreenGui
+
+--// CREATE TEXT LABEL
+local Label = Instance.new("TextLabel")
+Label.Size = UDim2.new(1, 0, 1, 0)
+Label.BackgroundTransparency = 1
+Label.Text = "Anti-AFK Enabled"
+Label.TextColor3 = Color3.fromRGB(0, 255, 0) -- green text
+Label.TextScaled = true
+Label.Font = Enum.Font.SourceSansBold
+Label.Parent = Notification
+
+--// FADE OUT AFTER 3 SECONDS
+task.spawn(function()
+    task.wait(3)
+    for i = 0, 1, 0.05 do
+        Notification.BackgroundTransparency = 0.7 + (i * 0.3)
+        Label.TextTransparency = i
+        task.wait(0.03)
+    end
+    Notification:Destroy()
+end)
