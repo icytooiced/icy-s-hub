@@ -1,0 +1,23 @@
+-- CLIENT-SIDED ALWAYS-ON NOCLIP
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Update character on respawn
+player.CharacterAdded:Connect(function(char)
+	character = char
+end)
+
+-- Constantly disable collisions
+RunService.Stepped:Connect(function()
+	if not character then return end
+
+	for _, part in ipairs(character:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CanCollide = false
+		end
+	end
+end)
