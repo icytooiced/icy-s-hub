@@ -122,7 +122,6 @@ end
 Buttons[1].Text = "ESP"
 Buttons[2].Text = "Aimbot"
 Buttons[3].Text = "Admin"
-Buttons[4].Text = "Fly"
 
 -- Minimize
 local minimized = false
@@ -137,7 +136,7 @@ Close.MouseButton1Click:Connect(function()
 end)
 
 --// =========================
---// ESP
+--// ESP (EXTERNAL SCRIPT)
 --// =========================
 Buttons[1].MouseButton1Click:Connect(function()
 	loadstring(game:HttpGet(
@@ -146,7 +145,7 @@ Buttons[1].MouseButton1Click:Connect(function()
 end)
 
 --// =========================
---// AIMBOT
+--// AIMBOT (EXTERNAL SCRIPT)
 --// =========================
 Buttons[2].MouseButton1Click:Connect(function()
 	loadstring(game:HttpGet(
@@ -164,15 +163,6 @@ Buttons[3].MouseButton1Click:Connect(function()
 end)
 
 --// =========================
---// FLY
---// =========================
-Buttons[4].MouseButton1Click:Connect(function()
-	loadstring(game:HttpGet(
-		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/fly"
-	))()
-end)
-
---// =========================
 --// KEY CHECK
 --// =========================
 KeyBox.FocusLost:Connect(function(enter)
@@ -185,3 +175,4 @@ KeyBox.FocusLost:Connect(function(enter)
 		Status.TextColor3 = Color3.new(1,0,0)
 	end
 end)
+
