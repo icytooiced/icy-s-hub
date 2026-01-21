@@ -9,9 +9,9 @@ local Camera = workspace.CurrentCamera
 --// VALID KEYS
 local ValidKeys = {
 	icyskey = true,
-	narutoskey = true,
 	key123 = true,
-	icy = true
+	icy = true,
+	123 = true
 }
 
 --// =========================
