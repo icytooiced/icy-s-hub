@@ -8,10 +8,10 @@ local Camera = workspace.CurrentCamera
 
 --// VALID KEYS
 local ValidKeys = {
-	icyskey = true,
-	narutoskey = true,
-	key123 = true,
-	icy = true
+    ["6631044286"] = true,
+    ["6232749547"] = true,
+    ["7681995313"] = true,
+    ["0899694468"] = true
 }
 
 --// =========================
@@ -20,7 +20,7 @@ local ValidKeys = {
 local KeyGui = Instance.new("ScreenGui")
 KeyGui.Name = "KeyGui"
 KeyGui.ResetOnSpawn = false
-KeyGui.Parent = game.CoreGui
+KeyGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local KeyFrame = Instance.new("Frame", KeyGui)
 KeyFrame.Size = UDim2.fromOffset(300,160)
@@ -64,7 +64,7 @@ local MainGui = Instance.new("ScreenGui")
 MainGui.Name = "IcysHub"
 MainGui.Enabled = false
 MainGui.ResetOnSpawn = false
-MainGui.Parent = game.CoreGui
+MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local MainFrame = Instance.new("Frame", MainGui)
 MainFrame.Size = UDim2.fromOffset(420,300)
@@ -104,6 +104,7 @@ local ButtonHolder = Instance.new("Frame", MainFrame)
 ButtonHolder.Position = UDim2.new(0,0,0,40)
 ButtonHolder.Size = UDim2.new(1,0,1,-40)
 ButtonHolder.BackgroundTransparency = 1
+ButtonHolder.Visible = true
 
 local Buttons = {}
 for i = 1,10 do
@@ -177,11 +178,13 @@ end)
 --// =========================
 KeyBox.FocusLost:Connect(function(enter)
 	if not enter then return end
-	if ValidKeys[KeyBox.Text:lower()] then
+	local inputKey = KeyBox.Text:gsub("%s+", "")  -- remove spaces
+	if ValidKeys[inputKey] then
 		KeyGui:Destroy()
 		MainGui.Enabled = true
 	else
 		Status.Text = "Invalid Key"
 		Status.TextColor3 = Color3.new(1,0,0)
+		KeyBox.Text = ""
 	end
 end)
