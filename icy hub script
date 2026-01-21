@@ -1,10 +1,8 @@
 --// SERVICES
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 
 --// VALID KEYS
 local ValidKeys = {
@@ -17,10 +15,9 @@ local ValidKeys = {
 --// =========================
 --// KEY GUI
 --// =========================
-local KeyGui = Instance.new("ScreenGui")
+local KeyGui = Instance.new("ScreenGui", game.CoreGui)
 KeyGui.Name = "KeyGui"
 KeyGui.ResetOnSpawn = false
-KeyGui.Parent = game.CoreGui
 
 local KeyFrame = Instance.new("Frame", KeyGui)
 KeyFrame.Size = UDim2.fromOffset(300,160)
@@ -43,8 +40,6 @@ KeyBox.Size = UDim2.fromScale(0.8,0.22)
 KeyBox.Position = UDim2.fromScale(0.1,0.4)
 KeyBox.PlaceholderText = "Key here..."
 KeyBox.Text = ""
-KeyBox.Font = Enum.Font.SourceSans
-KeyBox.TextSize = 18
 KeyBox.TextColor3 = Color3.new(1,1,1)
 KeyBox.BackgroundColor3 = Color3.fromRGB(40,40,40)
 Instance.new("UICorner", KeyBox)
@@ -55,16 +50,14 @@ Status.Position = UDim2.fromScale(0,0.78)
 Status.BackgroundTransparency = 1
 Status.Font = Enum.Font.SourceSansBold
 Status.TextSize = 18
-Status.Text = ""
 
 --// =========================
 --// MAIN GUI
 --// =========================
-local MainGui = Instance.new("ScreenGui")
+local MainGui = Instance.new("ScreenGui", game.CoreGui)
 MainGui.Name = "IcysHub"
 MainGui.Enabled = false
 MainGui.ResetOnSpawn = false
-MainGui.Parent = game.CoreGui
 
 local MainFrame = Instance.new("Frame", MainGui)
 MainFrame.Size = UDim2.fromOffset(420,300)
@@ -85,81 +78,103 @@ Header.TextColor3 = Color3.new(1,1,1)
 -- Close / Minimize
 local Close = Instance.new("TextButton", MainFrame)
 Close.Text = "X"
-Close.Font = Enum.Font.SourceSansBold
-Close.TextSize = 18
 Close.Size = UDim2.fromOffset(30,30)
 Close.Position = UDim2.new(1,-35,0,5)
 Close.BackgroundColor3 = Color3.fromRGB(170,50,50)
 
 local Min = Instance.new("TextButton", MainFrame)
 Min.Text = "-"
-Min.Font = Enum.Font.SourceSansBold
-Min.TextSize = 20
 Min.Size = UDim2.fromOffset(30,30)
 Min.Position = UDim2.new(1,-70,0,5)
 Min.BackgroundColor3 = Color3.fromRGB(80,80,80)
 
--- Button Holder
 local ButtonHolder = Instance.new("Frame", MainFrame)
 ButtonHolder.Position = UDim2.new(0,0,0,40)
 ButtonHolder.Size = UDim2.new(1,0,1,-40)
 ButtonHolder.BackgroundTransparency = 1
 
+--// =========================
+--// BUTTONS
+--// =========================
 local Buttons = {}
+local ToggleState = {}
+
 for i = 1,10 do
 	local b = Instance.new("TextButton", ButtonHolder)
 	b.Size = UDim2.fromOffset(120,35)
 	b.Position = UDim2.new(0.05 + ((i-1)%3)*0.32, 0, 0.05 + math.floor((i-1)/3)*0.18, 0)
-	b.Text = tostring(i)
-	b.Font = Enum.Font.SourceSansBold
-	b.TextSize = 18
-	b.TextColor3 = Color3.new(1,1,1)
 	b.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	b.TextColor3 = Color3.new(1,1,1)
+	b.Font = Enum.Font.SourceSansBold
+	b.TextSize = 16
 	Instance.new("UICorner", b)
 	Buttons[i] = b
+	ToggleState[i] = false
 end
 
-Buttons[1].Text = "ESP"
-Buttons[2].Text = "Aimbot"
+Buttons[1].Text = "ESP [OFF]"
+Buttons[2].Text = "Aimbot [OFF]"
 Buttons[3].Text = "Admin"
+Buttons[4].Text = "Fly [OFF]"
+Buttons[5].Text = "Noclip [OFF]"
 
--- Minimize
-local minimized = false
-Min.MouseButton1Click:Connect(function()
-	minimized = not minimized
-	ButtonHolder.Visible = not minimized
-	MainFrame.Size = minimized and UDim2.fromOffset(420,40) or UDim2.fromOffset(420,300)
-end)
+local function ToggleButton(i, name, callback)
+	Buttons[i].MouseButton1Click:Connect(function()
+		ToggleState[i] = not ToggleState[i]
 
-Close.MouseButton1Click:Connect(function()
-	MainGui:Destroy()
-end)
+		if ToggleState[i] then
+			Buttons[i].Text = name .. " [ON]"
+			Buttons[i].BackgroundColor3 = Color3.fromRGB(60,160,90)
+			if callback then callback() end
+		else
+			Buttons[i].Text = name .. " [OFF]"
+			Buttons[i].BackgroundColor3 = Color3.fromRGB(40,40,40)
+		end
+	end)
+end
 
---// =========================
---// ESP (EXTERNAL SCRIPT)
---// =========================
-Buttons[1].MouseButton1Click:Connect(function()
+-- ESP
+ToggleButton(1, "ESP", function()
 	loadstring(game:HttpGet(
 		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/esp"
 	))()
 end)
 
---// =========================
---// AIMBOT (EXTERNAL SCRIPT)
---// =========================
-Buttons[2].MouseButton1Click:Connect(function()
+-- AIMBOT
+ToggleButton(2, "Aimbot", function()
 	loadstring(game:HttpGet(
 		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/aimbot"
 	))()
 end)
 
---// =========================
---// ADMIN
---// =========================
+-- ADMIN (non-toggle)
 Buttons[3].MouseButton1Click:Connect(function()
 	loadstring(game:HttpGet(
 		"https://raw.githubusercontent.com/ltseverydayyou/Nameless-Admin/main/Source.lua"
 	))()
+end)
+
+-- FLY
+ToggleButton(4, "Fly", function()
+	loadstring(game:HttpGet(
+		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/fly"
+	))()
+end)
+
+-- NOCLIP
+ToggleButton(5, "Noclip", function()
+	loadstring(game:HttpGet(
+		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/noclip"
+	))()
+end)
+
+-- Minimize / Close
+Min.MouseButton1Click:Connect(function()
+	ButtonHolder.Visible = not ButtonHolder.Visible
+end)
+
+Close.MouseButton1Click:Connect(function()
+	MainGui:Destroy()
 end)
 
 --// =========================
@@ -175,4 +190,3 @@ KeyBox.FocusLost:Connect(function(enter)
 		Status.TextColor3 = Color3.new(1,0,0)
 	end
 end)
-
