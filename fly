@@ -1,0 +1,84 @@
+-- CLIENT-SIDED FLY SCRIPT
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+local flying = false
+local speed = 60
+
+local bv, bg
+local keys = {
+	W = false,
+	A = false,
+	S = false,
+	D = false,
+	Space = false,
+	Ctrl = false
+}
+
+-- INPUT HANDLING
+UserInputService.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+
+	if input.KeyCode == Enum.KeyCode.F then
+		flying = not flying
+
+		if flying then
+			bv = Instance.new("BodyVelocity")
+			bv.Velocity = Vector3.zero
+			bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+			bv.Parent = humanoidRootPart
+
+			bg = Instance.new("BodyGyro")
+			bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+			bg.CFrame = humanoidRootPart.CFrame
+			bg.Parent = humanoidRootPart
+		else
+			if bv then bv:Destroy() end
+			if bg then bg:Destroy() end
+		end
+	end
+
+	if input.KeyCode == Enum.KeyCode.W then keys.W = true end
+	if input.KeyCode == Enum.KeyCode.A then keys.A = true end
+	if input.KeyCode == Enum.KeyCode.S then keys.S = true end
+	if input.KeyCode == Enum.KeyCode.D then keys.D = true end
+	if input.KeyCode == Enum.KeyCode.Space then keys.Space = true end
+	if input.KeyCode == Enum.KeyCode.LeftControl then keys.Ctrl = true end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.KeyCode == Enum.KeyCode.W then keys.W = false end
+	if input.KeyCode == Enum.KeyCode.A then keys.A = false end
+	if input.KeyCode == Enum.KeyCode.S then keys.S = false end
+	if input.KeyCode == Enum.KeyCode.D then keys.D = false end
+	if input.KeyCode == Enum.KeyCode.Space then keys.Space = false end
+	if input.KeyCode == Enum.KeyCode.LeftControl then keys.Ctrl = false end
+end)
+
+-- FLY LOOP
+RunService.RenderStepped:Connect(function()
+	if not flying or not bv or not bg then return end
+
+	local cam = workspace.CurrentCamera
+	local direction = Vector3.zero
+
+	if keys.W then direction += cam.CFrame.LookVector end
+	if keys.S then direction -= cam.CFrame.LookVector end
+	if keys.A then direction -= cam.CFrame.RightVector end
+	if keys.D then direction += cam.CFrame.RightVector end
+	if keys.Space then direction += Vector3.new(0, 1, 0) end
+	if keys.Ctrl then direction -= Vector3.new(0, 1, 0) end
+
+	if direction.Magnitude > 0 then
+		direction = direction.Unit * speed
+	end
+
+	bv.Velocity = direction
+	bg.CFrame = cam.CFrame
+end)
