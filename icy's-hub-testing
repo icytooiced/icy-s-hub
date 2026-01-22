@@ -25,241 +25,125 @@ local function Tween(obj, props, t)
 	)
 end
 
---// PROGRESS BAR (TOP CENTER)
-local function ShowProgress(duration, text, callback)
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "ProgressGui"
-	gui.ResetOnSpawn = false
-	gui.Parent = PlayerGui
+--// =========================
+--// SECURITY SCAN (BLOCKING)
+--// =========================
+do
+	local ScanGui = Instance.new("ScreenGui", PlayerGui)
+	ScanGui.Name = "SecurityScan"
 
-	local frame = Instance.new("Frame", gui)
-	frame.Size = UDim2.fromOffset(320, 65)
-	frame.Position = UDim2.fromScale(0.5, 0) + UDim2.fromOffset(-160, 20)
-	frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-	frame.BorderSizePixel = 0
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
+	local Frame = Instance.new("Frame", ScanGui)
+	Frame.Size = UDim2.fromOffset(320,70)
+	Frame.Position = UDim2.new(0.5,-160,0,20)
+	Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+	Frame.BorderSizePixel = 0
+	Instance.new("UICorner", Frame)
 
-	local label = Instance.new("TextLabel", frame)
-	label.Size = UDim2.new(1,0,0.5,0)
-	label.BackgroundTransparency = 1
-	label.Text = text
-	label.Font = Enum.Font.GothamBold
-	label.TextSize = 18
-	label.TextColor3 = Color3.new(1,1,1)
+	local Label = Instance.new("TextLabel", Frame)
+	Label.Size = UDim2.new(1,0,0.5,0)
+	Label.BackgroundTransparency = 1
+	Label.Text = "Protected by Icy Security v1.4.2"
+	Label.Font = Enum.Font.GothamBold
+	Label.TextSize = 16
+	Label.TextColor3 = Color3.new(1,1,1)
 
-	local bg = Instance.new("Frame", frame)
-	bg.Position = UDim2.fromScale(0.05,0.6)
-	bg.Size = UDim2.fromScale(0.9,0.25)
-	bg.BackgroundColor3 = Color3.fromRGB(50,50,50)
-	Instance.new("UICorner", bg)
+	local BarBG = Instance.new("Frame", Frame)
+	BarBG.Position = UDim2.fromScale(0.05,0.6)
+	BarBG.Size = UDim2.fromScale(0.9,0.25)
+	BarBG.BackgroundColor3 = Color3.fromRGB(50,50,50)
+	Instance.new("UICorner", BarBG)
 
-	local bar = Instance.new("Frame", bg)
-	bar.Size = UDim2.fromScale(0,1)
-	bar.BackgroundColor3 = Color3.fromRGB(0,170,255)
-	Instance.new("UICorner", bar)
+	local Bar = Instance.new("Frame", BarBG)
+	Bar.Size = UDim2.fromScale(0,1)
+	Bar.BackgroundColor3 = Color3.fromRGB(0,170,255)
+	Instance.new("UICorner", Bar)
 
+	-- BLOCKING PROGRESS (IMPORTANT)
 	local start = tick()
-	local conn
-	conn = RunService.RenderStepped:Connect(function()
-		local p = math.clamp((tick()-start)/duration,0,1)
-		bar.Size = UDim2.fromScale(p,1)
-		if p >= 1 then
-			conn:Disconnect()
-			gui:Destroy()
-			if callback then callback() end
-		end
-	end)
-end
-
---// PARTICLES (CLIPPED)
-local function AddParticles(frame)
-	frame.ClipsDescendants = true
-	for i = 1,16 do
-		local p = Instance.new("Frame", frame)
-		p.Size = UDim2.fromOffset(6,6)
-		p.Position = UDim2.new(math.random(),0,math.random(),0)
-		p.BackgroundColor3 = Color3.fromRGB(0,170,255)
-		p.BackgroundTransparency = 0.6
-		p.BorderSizePixel = 0
-		Instance.new("UICorner", p).CornerRadius = UDim.new(1,0)
-
-		task.spawn(function()
-			while p.Parent do
-				Tween(p,{
-					Position = UDim2.new(
-						math.clamp(p.Position.X.Scale + math.random(-3,3)/100,0,1),
-						0,
-						math.clamp(p.Position.Y.Scale + math.random(-3,3)/100,0,1),
-						0
-					)
-				}, math.random(3,6)):Play()
-				task.wait(math.random(3,6))
-			end
-		end)
+	while tick() - start < 4 do
+		local p = math.clamp((tick()-start)/4,0,1)
+		Bar.Size = UDim2.fromScale(p,1)
+		RunService.RenderStepped:Wait()
 	end
-end
 
---// =========================
---// SECURITY SCAN (FIRST)
---// =========================
-ShowProgress(4, "Protected by Icy Security", function()
+	-- Run fake scan
 	pcall(function()
 		loadstring(game:HttpGet(
 			"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/security%20scan"
 		))()
 	end)
 
-	-- AFTER SCAN FINISHES → CREATE KEY GUI
-	--------------------------------------------------
+	ScanGui:Destroy()
+end
 
-	local KeyGui = Instance.new("ScreenGui")
-	KeyGui.Name = "KeyGui"
-	KeyGui.ResetOnSpawn = false
-	KeyGui.Parent = PlayerGui
+-- =========================
+-- KEY GUI (CREATED AFTER SCAN)
+-- =========================
+local KeyGui = Instance.new("ScreenGui", PlayerGui)
+KeyGui.Name = "KeyGui"
 
-	local KF = Instance.new("Frame", KeyGui)
-	KF.Size = UDim2.fromOffset(300,200)
-	KF.Position = UDim2.fromScale(0.5,0.5) - UDim2.fromOffset(150,100)
-	KF.BackgroundColor3 = Color3.fromRGB(25,25,25)
-	KF.Active = true
-	KF.Draggable = true
-	Instance.new("UICorner", KF)
+local KF = Instance.new("Frame", KeyGui)
+KF.Size = UDim2.fromOffset(300,200)
+KF.Position = UDim2.fromScale(0.5,0.5) - UDim2.fromOffset(150,100)
+KF.BackgroundColor3 = Color3.fromRGB(25,25,25)
+KF.Active = true
+KF.Draggable = true
+Instance.new("UICorner", KF)
 
-	local Title = Instance.new("TextLabel", KF)
-	Title.Size = UDim2.new(1,0,0,40)
-	Title.BackgroundTransparency = 1
-	Title.Text = "Enter Key"
-	Title.Font = Enum.Font.GothamBold
-	Title.TextSize = 22
-	Title.TextColor3 = Color3.new(1,1,1)
+local Title = Instance.new("TextLabel", KF)
+Title.Size = UDim2.new(1,0,0,40)
+Title.BackgroundTransparency = 1
+Title.Text = "Enter Key"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 22
+Title.TextColor3 = Color3.new(1,1,1)
 
-	local Box = Instance.new("TextBox", KF)
-	Box.Size = UDim2.fromScale(0.8,0.25)
-	Box.Position = UDim2.fromScale(0.1,0.35)
-	Box.PlaceholderText = "Key here..."
-	Box.BackgroundColor3 = Color3.fromRGB(45,45,45)
-	Box.TextColor3 = Color3.new(1,1,1)
-	Instance.new("UICorner", Box)
+local Box = Instance.new("TextBox", KF)
+Box.Size = UDim2.fromScale(0.8,0.25)
+Box.Position = UDim2.fromScale(0.1,0.35)
+Box.PlaceholderText = "Key here..."
+Box.BackgroundColor3 = Color3.fromRGB(45,45,45)
+Box.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", Box)
 
-	local Link = Instance.new("TextButton", KF)
-	Link.Size = UDim2.fromScale(1,0.15)
-	Link.Position = UDim2.fromScale(0,0.65)
-	Link.BackgroundTransparency = 1
-	Link.Text = "Key in Discord: discord.gg/bgX8GE6NSN"
-	Link.Font = Enum.Font.Gotham
-	Link.TextSize = 14
-	Link.TextWrapped = true
-	Link.TextColor3 = Color3.fromRGB(0,170,255)
-	Link.MouseButton1Click:Connect(function()
-		GuiService:OpenBrowserWindow("https://discord.gg/bgX8GE6NSN")
-	end)
+local Discord = Instance.new("TextButton", KF)
+Discord.Size = UDim2.fromScale(1,0.15)
+Discord.Position = UDim2.fromScale(0,0.65)
+Discord.BackgroundTransparency = 1
+Discord.Text = "Key in Discord: discord.gg/bgX8GE6NSN"
+Discord.Font = Enum.Font.Gotham
+Discord.TextSize = 14
+Discord.TextColor3 = Color3.fromRGB(0,170,255)
+Discord.TextWrapped = true
+Discord.MouseButton1Click:Connect(function()
+	GuiService:OpenBrowserWindow("https://discord.gg/bgX8GE6NSN")
+end)
 
-	local Status = Instance.new("TextLabel", KF)
-	Status.Size = UDim2.new(1,0,0,24)
-	Status.Position = UDim2.fromScale(0,0.85)
-	Status.BackgroundTransparency = 1
-	Status.Font = Enum.Font.GothamBold
-	Status.TextSize = 16
-	Status.TextColor3 = Color3.fromRGB(255,0,0)
+local Status = Instance.new("TextLabel", KF)
+Status.Size = UDim2.new(1,0,0,24)
+Status.Position = UDim2.fromScale(0,0.85)
+Status.BackgroundTransparency = 1
+Status.Font = Enum.Font.GothamBold
+Status.TextSize = 16
+Status.TextColor3 = Color3.fromRGB(255,0,0)
 
-	--// MAIN GUI
-	local MainGui = Instance.new("ScreenGui")
-	MainGui.Name = "IcysHub"
-	MainGui.Enabled = false
-	MainGui.Parent = PlayerGui
+-- =========================
+-- KEY CHECK
+-- =========================
+Box.FocusLost:Connect(function(enter)
+	if not enter then return end
+	local k = Box.Text:gsub("%s+","")
 
-	local MF = Instance.new("Frame", MainGui)
-	MF.Size = UDim2.fromOffset(420,300)
-	MF.Position = UDim2.fromScale(0.5,0.5) - UDim2.fromOffset(210,150)
-	MF.BackgroundColor3 = Color3.fromRGB(30,30,30)
-	MF.Active = true
-	MF.Draggable = true
-	Instance.new("UICorner", MF)
-
-	AddParticles(MF)
-
-	local Header = Instance.new("TextLabel", MF)
-	Header.Size = UDim2.new(1,0,0,40)
-	Header.BackgroundTransparency = 1
-	Header.Text = "Icys Hub"
-	Header.Font = Enum.Font.GothamBold
-	Header.TextSize = 22
-	Header.TextColor3 = Color3.new(1,1,1)
-
-	local Close = Instance.new("TextButton", MF)
-	Close.Text = "X"
-	Close.Size = UDim2.fromOffset(30,30)
-	Close.Position = UDim2.new(1,-35,0,5)
-	Close.BackgroundColor3 = Color3.fromRGB(170,50,50)
-	Instance.new("UICorner", Close)
-
-	local Min = Instance.new("TextButton", MF)
-	Min.Text = "-"
-	Min.Size = UDim2.fromOffset(30,30)
-	Min.Position = UDim2.new(1,-70,0,5)
-	Min.BackgroundColor3 = Color3.fromRGB(80,80,80)
-	Instance.new("UICorner", Min)
-
-	local Holder = Instance.new("Frame", MF)
-	Holder.Position = UDim2.new(0,0,0,40)
-	Holder.Size = UDim2.new(1,0,1,-40)
-	Holder.BackgroundTransparency = 1
-
-	local minimized = false
-	Min.MouseButton1Click:Connect(function()
-		minimized = not minimized
-		Holder.Visible = not minimized
-		MF.Size = minimized and UDim2.fromOffset(420,40) or UDim2.fromOffset(420,300)
-	end)
-
-	Close.MouseButton1Click:Connect(function()
-		MainGui:Destroy()
-	end)
-
-	local names = {"ESP","Aimbot","Admin","Fly","Speed","Anti-AFK"}
-	local urls = {
-		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/esp",
-		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/aimbot",
-		"https://raw.githubusercontent.com/ltseverydayyou/Nameless-Admin/main/Source.lua",
-		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/fly",
-		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/speed%20script",
-		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/anti-afk"
-	}
-
-	for i=1,#names do
-		local b = Instance.new("TextButton", Holder)
-		b.Size = UDim2.fromOffset(120,35)
-		b.Position = UDim2.new(0.05+((i-1)%3)*0.32,0,0.05+math.floor((i-1)/3)*0.18,0)
-		b.Text = names[i]
-		b.BackgroundColor3 = Color3.fromRGB(45,45,45)
-		b.TextColor3 = Color3.new(1,1,1)
-		Instance.new("UICorner", b)
-
-		b.MouseButton1Click:Connect(function()
-			ShowProgress(2,"Loading...",function()
-				loadstring(game:HttpGet(urls[i]))()
-			end)
-		end)
+	if k:lower() == "naruto" then
+		LocalPlayer:Kick("fuck you")
+		return
 	end
 
-	--// KEY CHECK
-	Box.FocusLost:Connect(function(enter)
-		if not enter then return end
-		local k = Box.Text:gsub("%s+","")
-
-		if k:lower() == "naruto" then
-			LocalPlayer:Kick("fuck you")
-			return
-		end
-
-		if ValidKeys[k] then
-			KeyGui:Destroy()
-			ShowProgress(5,"Loading...",function()
-				MainGui.Enabled = true
-			end)
-		else
-			Status.Text = "Invalid Key"
-			Box.Text = ""
-		end
-	end)
+	if ValidKeys[k] then
+		KeyGui:Destroy()
+	else
+		Status.Text = "Invalid Key"
+		Box.Text = ""
+	end
 end)
+
