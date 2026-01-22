@@ -1,0 +1,118 @@
+--// FAKE SECURITY SCAN - ICY SECURITY
+
+local function FakeSecurityScan(scanTime, finishedCallback)
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local TweenService = game:GetService("TweenService")
+
+    local player = Players.LocalPlayer
+
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "IcySecurityScan"
+    gui.ResetOnSpawn = false
+    gui.Parent = player:WaitForChild("PlayerGui")
+
+    local frame = Instance.new("Frame", gui)
+    frame.Size = UDim2.fromOffset(380, 140)
+    frame.Position = UDim2.fromScale(0.5, 0.5) - UDim2.fromOffset(190, 70)
+    frame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+    frame.BorderSizePixel = 0
+    frame.Active = true
+    frame.Draggable = true
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
+
+    -- Title
+    local title = Instance.new("TextLabel", frame)
+    title.Size = UDim2.new(1, 0, 0, 36)
+    title.BackgroundTransparency = 1
+    title.Text = "Security Scan"
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 20
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    -- Status text
+    local status = Instance.new("TextLabel", frame)
+    status.Position = UDim2.fromOffset(0, 42)
+    status.Size = UDim2.new(1, 0, 0, 28)
+    status.BackgroundTransparency = 1
+    status.Text = "Initializing scan..."
+    status.Font = Enum.Font.Gotham
+    status.TextSize = 15
+    status.TextColor3 = Color3.fromRGB(200, 200, 200)
+
+    -- Progress bar background
+    local barBG = Instance.new("Frame", frame)
+    barBG.Position = UDim2.fromOffset(20, 90)
+    barBG.Size = UDim2.new(1, -40, 0, 12)
+    barBG.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    barBG.BorderSizePixel = 0
+    Instance.new("UICorner", barBG).CornerRadius = UDim.new(0, 6)
+
+    -- Progress bar
+    local bar = Instance.new("Frame", barBG)
+    bar.Size = UDim2.fromScale(0, 1)
+    bar.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    bar.BorderSizePixel = 0
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 6)
+
+    -- Footer branding
+    local footer = Instance.new("TextLabel", frame)
+    footer.Size = UDim2.new(1, 0, 0, 18)
+    footer.Position = UDim2.fromScale(0, 1) - UDim2.fromOffset(0, 18)
+    footer.BackgroundTransparency = 1
+    footer.Text = "Protected by Icy Security • v1.4.2"
+    footer.Font = Enum.Font.Gotham
+    footer.TextSize = 12
+    footer.TextColor3 = Color3.fromRGB(160, 160, 180)
+    footer.TextTransparency = 0.35
+    footer.TextXAlignment = Enum.TextXAlignment.Center
+
+    -- Subtle footer pulse
+    task.spawn(function()
+        while footer.Parent do
+            footer.TextTransparency = 0.25
+            task.wait(1)
+            footer.TextTransparency = 0.4
+            task.wait(1)
+        end
+    end)
+
+    local messages = {
+        "Scanning client memory...",
+        "Verifying environment...",
+        "Checking integrity...",
+        "Finalizing security scan..."
+    }
+
+    local startTime = tick()
+    local lastMessage = 0
+
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        local progress = math.clamp((tick() - startTime) / scanTime, 0, 1)
+        bar.Size = UDim2.fromScale(progress, 1)
+
+        local index = math.floor(progress * #messages) + 1
+        if messages[index] and index ~= lastMessage then
+            status.Text = messages[index]
+            lastMessage = index
+        end
+
+        if progress >= 1 then
+            connection:Disconnect()
+            status.Text = "Security check passed"
+            task.wait(0.8)
+
+            TweenService:Create(frame, TweenInfo.new(0.4), {
+                BackgroundTransparency = 1
+            }):Play()
+
+            task.wait(0.4)
+            gui:Destroy()
+
+            if finishedCallback then
+                finishedCallback()
+            end
+        end
+    end)
+end
