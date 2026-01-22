@@ -3,10 +3,85 @@
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
+
 local LocalPlayer = Players.LocalPlayer
 
 -- Fake version
 local VERSION = "v2.7.4"
+
+--// EXECUTOR DETECTION (SAFE / VISUAL)
+local function getExecutor()
+	if identifyexecutor then
+		local ok, name = pcall(identifyexecutor)
+		if ok and name then return name end
+	end
+	if syn then return "Synapse X" end
+	if fluxus then return "Fluxus" end
+	if KRNL_LOADED then return "KRNL" end
+	if isexecutorclosure then return "Script-Ware" end
+	return "Unknown Executor"
+end
+
+local EXECUTOR = getExecutor()
+
+--// BACKGROUND BLUR (SECURITY ONLY)
+local blur = Instance.new("BlurEffect")
+blur.Name = "IcysSecurityBlur"
+blur.Size = 0
+blur.Parent = Lighting
+
+TweenService:Create(blur, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {
+	Size = 18
+}):Play()
+
+--// SNOW PARTICLES (SECURITY ONLY)
+local snowGui = Instance.new("ScreenGui")
+snowGui.Name = "IcysSecuritySnow"
+snowGui.IgnoreGuiInset = true
+snowGui.ResetOnSpawn = false
+snowGui.Parent = game.CoreGui
+
+local snowFrame = Instance.new("Frame")
+snowFrame.Size = UDim2.fromScale(1,1)
+snowFrame.BackgroundTransparency = 1
+snowFrame.Parent = snowGui
+
+local snowRunning = true
+
+-- Function to spawn a single snowflake
+local function spawnSnowflake()
+	local flake = Instance.new("ImageLabel")
+	flake.BackgroundTransparency = 1
+	flake.Size = UDim2.new(0, math.random(6,14), 0, math.random(6,14))
+	flake.Position = UDim2.new(math.random(), 0, 0, -20) -- start slightly above screen
+	flake.Image = "rbxassetid://12103422072"
+	flake.ImageTransparency = 0.25 + math.random()*0.3
+	flake.ZIndex = 5
+	flake.Parent = snowFrame
+
+	local fallTime = math.random(4,7) -- seconds to fall
+	local drift = math.random(-10,10)/100
+
+	-- Tween to fall
+	local goal = {Position = UDim2.new(flake.Position.X.Scale + drift, 0, 1.2, 0)}
+	local tween = TweenService:Create(flake, TweenInfo.new(fallTime, Enum.EasingStyle.Linear), goal)
+	tween:Play()
+
+	-- Destroy after falling
+	Debris:AddItem(flake, fallTime)
+end
+
+-- Spawn snowflakes gradually using Heartbeat
+RunService.Heartbeat:Connect(function()
+	if snowRunning then
+		if math.random() < 0.35 then -- density control
+			spawnSnowflake()
+		end
+	end
+end)
 
 --// GUI SETUP
 local gui = Instance.new("ScreenGui")
@@ -23,13 +98,12 @@ main.BorderSizePixel = 0
 main.Parent = gui
 main.BackgroundTransparency = 1
 
-local corner = Instance.new("UICorner", main)
-corner.CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,14)
 
 -- Shadow
 local shadow = Instance.new("ImageLabel")
-shadow.Size = UDim2.new(1, 40, 1, 40)
-shadow.Position = UDim2.new(0, -20, 0, -20)
+shadow.Size = UDim2.new(1,40,1,40)
+shadow.Position = UDim2.new(0,-20,0,-20)
 shadow.BackgroundTransparency = 1
 shadow.Image = "rbxassetid://1316045217"
 shadow.ImageTransparency = 0.4
@@ -39,98 +113,100 @@ shadow.Parent = main
 
 -- Title
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -20, 0, 50)
-title.Position = UDim2.new(0, 10, 0, 10)
+title.Size = UDim2.new(1,-20,0,50)
+title.Position = UDim2.new(0,10,0,10)
 title.BackgroundTransparency = 1
 title.Text = "Icy's Security"
-title.TextColor3 = Color3.fromRGB(200, 220, 255)
+title.TextColor3 = Color3.fromRGB(200,220,255)
 title.Font = Enum.Font.GothamBold
 title.TextScaled = true
 title.Parent = main
 
 -- Version
 local version = Instance.new("TextLabel")
-version.Size = UDim2.new(1, -20, 0, 20)
-version.Position = UDim2.new(0, 10, 0, 60)
+version.Size = UDim2.new(1,-20,0,20)
+version.Position = UDim2.new(0,10,0,60)
 version.BackgroundTransparency = 1
-version.Text = "Security Engine " .. VERSION
-version.TextColor3 = Color3.fromRGB(140, 160, 200)
+version.Text = "Security Engine "..VERSION
+version.TextColor3 = Color3.fromRGB(140,160,200)
 version.Font = Enum.Font.Gotham
 version.TextScaled = true
 version.Parent = main
 
 -- Avatar
 local avatar = Instance.new("ImageLabel")
-avatar.Size = UDim2.new(0, 100, 0, 100)
-avatar.Position = UDim2.new(0, 20, 0, 100)
-avatar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+avatar.Size = UDim2.new(0,100,0,100)
+avatar.Position = UDim2.new(0,20,0,100)
+avatar.BackgroundColor3 = Color3.fromRGB(30,30,40)
 avatar.Image = Players:GetUserThumbnailAsync(
 	LocalPlayer.UserId,
 	Enum.ThumbnailType.HeadShot,
 	Enum.ThumbnailSize.Size420x420
 )
 avatar.Parent = main
-
-local avatarCorner = Instance.new("UICorner", avatar)
-avatarCorner.CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", avatar).CornerRadius = UDim.new(1,0)
 
 -- Info
 local info = Instance.new("TextLabel")
-info.Size = UDim2.new(1, -150, 0, 140)
-info.Position = UDim2.new(0, 140, 0, 100)
+info.Size = UDim2.new(1,-150,0,160)
+info.Position = UDim2.new(0,140,0,100)
 info.BackgroundTransparency = 1
 info.TextXAlignment = Enum.TextXAlignment.Left
 info.TextYAlignment = Enum.TextYAlignment.Top
 info.Font = Enum.Font.Gotham
-info.TextColor3 = Color3.fromRGB(220, 220, 230)
+info.TextColor3 = Color3.fromRGB(220,220,230)
 info.TextScaled = true
 info.TextWrapped = true
 info.Text =
-	"Username: " .. LocalPlayer.Name .. "\n" ..
-	"Display Name: " .. LocalPlayer.DisplayName .. "\n" ..
-	"User ID: " .. LocalPlayer.UserId .. "\n" ..
-	"Account Age: " .. LocalPlayer.AccountAge .. " days\n" ..
+	"Username: "..LocalPlayer.Name.."\n"..
+	"Display Name: "..LocalPlayer.DisplayName.."\n"..
+	"User ID: "..LocalPlayer.UserId.."\n"..
+	"Account Age: "..LocalPlayer.AccountAge.." days\n"..
+	"Executor: "..EXECUTOR.."\n"..
 	"Security Status: Verifying..."
 info.Parent = main
 
 -- Progress bar
 local barBG = Instance.new("Frame")
-barBG.Size = UDim2.new(1, -40, 0, 18)
-barBG.Position = UDim2.new(0, 20, 1, -40)
-barBG.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+barBG.Size = UDim2.new(1,-40,0,18)
+barBG.Position = UDim2.new(0,20,1,-40)
+barBG.BackgroundColor3 = Color3.fromRGB(35,35,45)
 barBG.Parent = main
-
-local barCorner = Instance.new("UICorner", barBG)
-barCorner.CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", barBG).CornerRadius = UDim.new(1,0)
 
 local bar = Instance.new("Frame")
-bar.Size = UDim2.new(0, 0, 1, 0)
-bar.BackgroundColor3 = Color3.fromRGB(100, 160, 255)
+bar.Size = UDim2.new(0,0,1,0)
+bar.BackgroundColor3 = Color3.fromRGB(100,160,255)
 bar.Parent = barBG
+Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0)
 
-local barCorner2 = Instance.new("UICorner", bar)
-barCorner2.CornerRadius = UDim.new(1, 0)
-
--- Fade-in
+-- Fade in
 TweenService:Create(main, TweenInfo.new(0.4), {
 	BackgroundTransparency = 0
 }):Play()
 
--- Fake scan + execute hub
+--// FAKE SCAN + EXECUTE HUB
 task.spawn(function()
 	for i = 1, 100 do
-		bar.Size = UDim2.new(i / 100, 0, 1, 0)
+		bar.Size = UDim2.new(i/100,0,1,0)
 		task.wait(0.025)
 	end
 
 	info.Text =
-		"Username: " .. LocalPlayer.Name .. "\n" ..
-		"Display Name: " .. LocalPlayer.DisplayName .. "\n" ..
-		"User ID: " .. LocalPlayer.UserId .. "\n" ..
-		"Account Age: " .. LocalPlayer.AccountAge .. " days\n" ..
+		"Username: "..LocalPlayer.Name.."\n"..
+		"Display Name: "..LocalPlayer.DisplayName.."\n"..
+		"User ID: "..LocalPlayer.UserId.."\n"..
+		"Account Age: "..LocalPlayer.AccountAge.." days\n"..
+		"Executor: "..EXECUTOR.."\n"..
 		"Security Status: ✅ Verified"
 
 	task.wait(1)
+
+	-- CLEANUP SECURITY FX
+	snowRunning = false
+	snowGui:Destroy()
+	TweenService:Create(blur, TweenInfo.new(0.4), {Size = 0}):Play()
+	Debris:AddItem(blur, 0.5)
 
 	gui:Destroy()
 
@@ -139,3 +215,4 @@ task.spawn(function()
 		"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/icy%20hub%20script"
 	))()
 end)
+
