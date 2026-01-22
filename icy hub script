@@ -46,8 +46,8 @@ local function AddParticles(gui)
             while p.Parent do
                 local x = math.clamp(p.Position.X.Scale + (math.random(-5,5)/100),0,1)
                 local y = math.clamp(p.Position.Y.Scale + (math.random(-5,5)/100),0,1)
-                Tween(p, {Position = UDim2.new(x,0,y,0)}, math.random(2,5)):Play()
-                wait(math.random(2,5))
+                Tween(p, {Position = UDim2.new(x,0,y,0)}, 1):Play() -- 1 second animation
+                wait(0.05)
             end
         end)()
     end
@@ -67,7 +67,7 @@ local function ShowProgressBar(duration, text, callback)
     Frame.BorderSizePixel = 0
     Frame.BackgroundTransparency = 1
     Instance.new("UICorner", Frame).CornerRadius = UDim.new(0,12)
-    Tween(Frame, {BackgroundTransparency = 0}, 0.5):Play()
+    Tween(Frame, {BackgroundTransparency = 0}, 0.2):Play()
 
     local Label = Instance.new("TextLabel", Frame)
     Label.Size = UDim2.new(1,0,0.4,0)
@@ -97,8 +97,8 @@ local function ShowProgressBar(duration, text, callback)
         Progress.Size = UDim2.fromScale(progress,1)
         if progress >= 1 then
             conn:Disconnect()
-            Tween(Frame, {BackgroundTransparency=1}, 0.5):Play()
-            wait(0.5)
+            Tween(Frame, {BackgroundTransparency=1}, 0.2):Play()
+            wait(0.2)
             Gui:Destroy()
             if callback then callback() end
         end
@@ -122,7 +122,7 @@ local function ShowWelcomeMessage(duration)
     Frame.Draggable = true
     Instance.new("UICorner", Frame).CornerRadius = UDim.new(0,12)
     Frame.ClipsDescendants = true
-    Tween(Frame, {BackgroundTransparency=0}, 0.5):Play()
+    Tween(Frame, {BackgroundTransparency=0}, 0.2):Play()
 
     local thumb = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size48x48)
     local Avatar = Instance.new("ImageLabel", Frame)
@@ -163,8 +163,8 @@ local function ShowWelcomeMessage(duration)
         Progress.Size = UDim2.fromScale(progress,1)
         if progress >= 1 then
             conn:Disconnect()
-            Tween(Frame,{BackgroundTransparency=1},0.5):Play()
-            wait(0.5)
+            Tween(Frame,{BackgroundTransparency=1},0.2):Play()
+            wait(0.2)
             Gui:Destroy()
         end
     end)
@@ -330,7 +330,7 @@ for i=1,#names do
     Instance.new("UICorner", b)
 
     b.MouseButton1Click:Connect(function()
-        ShowProgressBar(2,"Loading...",function()
+        ShowProgressBar(1,"Loading...",function() -- now 1 second
             loadstring(game:HttpGet(urls[i]))()
         end)
     end)
@@ -346,9 +346,9 @@ KeyBox.FocusLost:Connect(function(enter)
     end
     if ValidKeys[inputKey] then
         KeyGui:Destroy()
-        ShowProgressBar(5,"Loading...",function()
+        ShowProgressBar(1,"Loading...",function() -- now 1 second
             MainGui.Enabled = true
-            ShowWelcomeMessage(15)
+            ShowWelcomeMessage(1) -- now 1 second
         end)
     else
         Status.Text = "Invalid Key"
@@ -356,3 +356,4 @@ KeyBox.FocusLost:Connect(function(enter)
         KeyBox.Text = ""
     end
 end)
+
