@@ -1,0 +1,86 @@
+-- Client-sided fake Roblox ban screen
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+
+-- Generate fake moderation ID
+local function generateModID()
+	return "RBX-" .. math.random(100000, 999999) .. "-" .. math.random(1000, 9999)
+end
+
+local moderationId = generateModID()
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "RobloxBanScreen"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Background
+local bg = Instance.new("Frame")
+bg.Size = UDim2.fromScale(1, 1)
+bg.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+bg.BackgroundTransparency = 1
+bg.Parent = gui
+
+TweenService:Create(bg, TweenInfo.new(0.6), {
+	BackgroundTransparency = 0
+}):Play()
+
+-- Main box
+local box = Instance.new("Frame")
+box.Size = UDim2.fromScale(0.5, 0.45)
+box.Position = UDim2.fromScale(0.5, 0.5)
+box.AnchorPoint = Vector2.new(0.5, 0.5)
+box.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+box.BorderSizePixel = 0
+box.Parent = bg
+
+Instance.new("UICorner", box).CornerRadius = UDim.new(0, 14)
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -40, 0, 70)
+title.Position = UDim2.new(0, 20, 0, 20)
+title.BackgroundTransparency = 1
+title.Text = "Permanently Banned from Roblox"
+title.TextColor3 = Color3.fromRGB(255, 80, 80)
+title.Font = Enum.Font.GothamBold
+title.TextScaled = true
+title.Parent = box
+
+-- Body text
+local body = Instance.new("TextLabel")
+body.Size = UDim2.new(1, -60, 1, -130)
+body.Position = UDim2.new(0, 30, 0, 110)
+body.BackgroundTransparency = 1
+body.TextWrapped = true
+body.TextYAlignment = Enum.TextYAlignment.Top
+body.TextColor3 = Color3.fromRGB(230, 230, 230)
+body.Font = Enum.Font.Gotham
+body.TextScaled = true
+body.Parent = box
+
+body.Text =
+	"Your account has been permanently banned from Roblox for violating the Roblox Community Standards.\n\n" ..
+	"Reason:\nEXPLOITING\n\n" ..
+	"This moderation action is final and cannot be appealed.\n\n" ..
+	"Moderation ID: ".. moderationId .."\n\n" ..
+	"You will be disconnected from the experience."
+
+-- 8-second countdown
+for i = 8, 1, -1 do
+	body.Text = body.Text:gsub(
+		"You will be disconnected from the experience.",
+		"You will be disconnected from the experience in "..i.." seconds."
+	)
+	task.wait(1)
+end
+
+-- Kick
+player:Kick(
+	"Permanently banned from Roblox\n" ..
+	"Reason: EXPLOITING\n" ..
+	"Moderation ID: "..moderationId
+)
