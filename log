@@ -1,0 +1,101 @@
+-- CLIENT-SIDED VISUAL ONLY (NO REAL LOGGING)
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
+local player = Players.LocalPlayer
+
+-- Fake data
+local logId = "LOG-" .. math.random(100000, 999999)
+local timestamp = os.date("!%Y-%m-%d %H:%M:%S UTC")
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "HackAlertGui"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Background
+local bg = Instance.new("Frame")
+bg.Size = UDim2.fromScale(1,1)
+bg.BackgroundColor3 = Color3.fromRGB(0,0,0)
+bg.BackgroundTransparency = 0.2
+bg.Parent = gui
+
+-- Alert box
+local box = Instance.new("Frame")
+box.Size = UDim2.fromScale(0.5, 0.42)
+box.Position = UDim2.fromScale(0.5, 0.5)
+box.AnchorPoint = Vector2.new(0.5,0.5)
+box.BackgroundColor3 = Color3.fromRGB(30,0,0)
+box.BorderSizePixel = 0
+box.Parent = bg
+
+Instance.new("UICorner", box).CornerRadius = UDim.new(0,16)
+
+-- Flashing red alert
+local flashTween = TweenService:Create(
+	box,
+	TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true),
+	{BackgroundColor3 = Color3.fromRGB(120,0,0)}
+)
+flashTween:Play()
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,-30,0,70)
+title.Position = UDim2.new(0,15,0,15)
+title.BackgroundTransparency = 1
+title.Text = "⚠ SECURITY BREACH DETECTED ⚠"
+title.TextColor3 = Color3.fromRGB(255,70,70)
+title.Font = Enum.Font.GothamBlack
+title.TextScaled = true
+title.Parent = box
+
+-- Body
+local body = Instance.new("TextLabel")
+body.Size = UDim2.new(1,-40,1,-150)
+body.Position = UDim2.new(0,20,0,100)
+body.BackgroundTransparency = 1
+body.TextWrapped = true
+body.TextYAlignment = Enum.TextYAlignment.Top
+body.TextColor3 = Color3.fromRGB(235,235,235)
+body.Font = Enum.Font.Gotham
+body.TextScaled = true
+body.Text =
+	"Your account activity has triggered a security alert.\n\n" ..
+	"IP LOGGED\n" ..
+	"Location: Cushman, AR, USA\n\n" ..
+	"Log ID: "..logId.."\n" ..
+	"Timestamp: "..timestamp.."\n\n" ..
+	"Unauthorized access may result in permanent account action."
+body.Parent = box
+
+-- Acknowledge button
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0.45,0,0,50)
+button.Position = UDim2.new(0.5,0,1,-65)
+button.AnchorPoint = Vector2.new(0.5,1)
+button.BackgroundColor3 = Color3.fromRGB(180,0,0)
+button.Text = "ACKNOWLEDGE"
+button.TextColor3 = Color3.fromRGB(255,255,255)
+button.Font = Enum.Font.GothamBold
+button.TextScaled = true
+button.Parent = box
+
+Instance.new("UICorner", button).CornerRadius = UDim.new(0,12)
+
+-- Warning sound
+local sound = Instance.new("Sound")
+sound.SoundId = "rbxassetid://9118826042"
+sound.Volume = 2
+sound.Looped = true
+sound.Parent = SoundService
+sound:Play()
+
+-- Button behavior (KICK)
+button.MouseButton1Click:Connect(function()
+	flashTween:Cancel()
+	sound:Stop()
+	player:Kick("ip logged successfully")
+end)
