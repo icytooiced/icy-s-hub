@@ -12,162 +12,172 @@ local ValidKeys = {
     ["6232749547"] = true,
     ["7681995313"] = true,
     ["0899694468"] = true,
-    ["xyra"] = true
+    ["xyra"] = true,
+    ["vetements"] = true -- NEW KEY
 }
 
 --// TWEEN HELPER
 local function Tween(object, properties, duration, style, direction)
-    style = style or Enum.EasingStyle.Quad
-    direction = direction or Enum.EasingDirection.Out
-    local tweenInfo = TweenInfo.new(duration, style, direction)
-    return TweenService:Create(object, tweenInfo, properties)
+	style = style or Enum.EasingStyle.Quad
+	direction = direction or Enum.EasingDirection.Out
+	local tweenInfo = TweenInfo.new(duration, style, direction)
+	return TweenService:Create(object, tweenInfo, properties)
 end
 
 --// PARTICLE EFFECTS CONSTRAINED TO GUI
 local function AddParticles(gui)
-    local emitter = Instance.new("Frame")
-    emitter.Size = UDim2.fromScale(1,1)
-    emitter.BackgroundTransparency = 1
-    emitter.ClipsDescendants = true
-    emitter.Parent = gui
+	local emitter = Instance.new("Frame")
+	emitter.Size = UDim2.fromScale(1,1)
+	emitter.BackgroundTransparency = 1
+	emitter.ClipsDescendants = true
+	emitter.Parent = gui
 
-    local numParticles = 25
-    for i = 1, numParticles do
-        local p = Instance.new("Frame", emitter)
-        p.Size = UDim2.fromOffset(6,6)
-        p.Position = UDim2.new(math.random(),0,math.random(),0)
-        p.BackgroundColor3 = Color3.fromRGB(0,170,255)
-        p.BorderSizePixel = 0
-        p.BackgroundTransparency = 0.6
-        local uic = Instance.new("UICorner", p)
-        uic.CornerRadius = UDim.new(1,0)
+	local numParticles = 25
+	for i = 1, numParticles do
+		local p = Instance.new("Frame", emitter)
+		p.Size = UDim2.fromOffset(6,6)
+		p.Position = UDim2.new(math.random(),0,math.random(),0)
+		p.BackgroundColor3 = Color3.fromRGB(0,170,255)
+		p.BorderSizePixel = 0
+		p.BackgroundTransparency = 0.6
 
-        coroutine.wrap(function()
-            while p.Parent do
-                local x = math.clamp(p.Position.X.Scale + (math.random(-5,5)/100),0,1)
-                local y = math.clamp(p.Position.Y.Scale + (math.random(-5,5)/100),0,1)
-                Tween(p, {Position = UDim2.new(x,0,y,0)}, 1):Play() -- 1 second animation
-                wait(0.05)
-            end
-        end)()
-    end
+		local uic = Instance.new("UICorner", p)
+		uic.CornerRadius = UDim.new(1,0)
+
+		coroutine.wrap(function()
+			while p.Parent do
+				local x = math.clamp(p.Position.X.Scale + (math.random(-5,5)/100),0,1)
+				local y = math.clamp(p.Position.Y.Scale + (math.random(-5,5)/100),0,1)
+				Tween(p, {Position = UDim2.new(x,0,y,0)}, 1):Play()
+				wait(0.05)
+			end
+		end)()
+	end
 end
 
 --// PROGRESS BAR
 local function ShowProgressBar(duration, text, callback)
-    local Gui = Instance.new("ScreenGui")
-    Gui.Name = "ProgressGui"
-    Gui.ResetOnSpawn = false
-    Gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+	local Gui = Instance.new("ScreenGui")
+	Gui.Name = "ProgressGui"
+	Gui.ResetOnSpawn = false
+	Gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-    local Frame = Instance.new("Frame", Gui)
-    Frame.Size = UDim2.fromOffset(300,60)
-    Frame.Position = UDim2.fromScale(0.5,0.5) - UDim2.fromOffset(150,30)
-    Frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
-    Frame.BorderSizePixel = 0
-    Frame.BackgroundTransparency = 1
-    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0,12)
-    Tween(Frame, {BackgroundTransparency = 0}, 0.2):Play()
+	local Frame = Instance.new("Frame", Gui)
+	Frame.Size = UDim2.fromOffset(300,60)
+	Frame.Position = UDim2.fromScale(0.5,0.5) - UDim2.fromOffset(150,30)
+	Frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+	Frame.BorderSizePixel = 0
+	Frame.BackgroundTransparency = 1
+	Instance.new("UICorner", Frame).CornerRadius = UDim.new(0,12)
 
-    local Label = Instance.new("TextLabel", Frame)
-    Label.Size = UDim2.new(1,0,0.4,0)
-    Label.Position = UDim2.fromScale(0,0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.Font = Enum.Font.GothamBold
-    Label.TextSize = 18
-    Label.TextColor3 = Color3.fromRGB(255,255,255)
+	Tween(Frame, {BackgroundTransparency = 0}, 0.2):Play()
 
-    local ProgressBg = Instance.new("Frame", Frame)
-    ProgressBg.Size = UDim2.fromScale(0.9,0.3)
-    ProgressBg.Position = UDim2.fromScale(0.05,0.6)
-    ProgressBg.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    Instance.new("UICorner", ProgressBg).CornerRadius = UDim.new(0,6)
+	local Label = Instance.new("TextLabel", Frame)
+	Label.Size = UDim2.new(1,0,0.4,0)
+	Label.BackgroundTransparency = 1
+	Label.Text = text
+	Label.Font = Enum.Font.GothamBold
+	Label.TextSize = 18
+	Label.TextColor3 = Color3.fromRGB(255,255,255)
 
-    local Progress = Instance.new("Frame", ProgressBg)
-    Progress.Size = UDim2.fromScale(0,1)
-    Progress.BackgroundColor3 = Color3.fromRGB(0,170,255)
-    Instance.new("UICorner", Progress).CornerRadius = UDim.new(0,6)
+	local ProgressBg = Instance.new("Frame", Frame)
+	ProgressBg.Size = UDim2.fromScale(0.9,0.3)
+	ProgressBg.Position = UDim2.fromScale(0.05,0.6)
+	ProgressBg.BackgroundColor3 = Color3.fromRGB(50,50,50)
+	Instance.new("UICorner", ProgressBg)
 
-    local startTime = tick()
-    local conn
-    conn = RunService.RenderStepped:Connect(function()
-        local elapsed = tick() - startTime
-        local progress = math.clamp(elapsed/duration,0,1)
-        Progress.Size = UDim2.fromScale(progress,1)
-        if progress >= 1 then
-            conn:Disconnect()
-            Tween(Frame, {BackgroundTransparency=1}, 0.2):Play()
-            wait(0.2)
-            Gui:Destroy()
-            if callback then callback() end
-        end
-    end)
+	local Progress = Instance.new("Frame", ProgressBg)
+	Progress.Size = UDim2.fromScale(0,1)
+	Progress.BackgroundColor3 = Color3.fromRGB(0,170,255)
+	Instance.new("UICorner", Progress)
+
+	local startTime = tick()
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		local elapsed = tick() - startTime
+		local progress = math.clamp(elapsed/duration,0,1)
+		Progress.Size = UDim2.fromScale(progress,1)
+
+		if progress >= 1 then
+			conn:Disconnect()
+			Tween(Frame,{BackgroundTransparency=1},0.2):Play()
+			wait(0.2)
+			Gui:Destroy()
+			if callback then callback() end
+		end
+	end)
 end
 
 --// WELCOME NOTIFICATION
 local function ShowWelcomeMessage(duration)
-    local Gui = Instance.new("ScreenGui")
-    Gui.Name = "WelcomeGui"
-    Gui.ResetOnSpawn = false
-    Gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+	local Gui = Instance.new("ScreenGui")
+	Gui.Name = "WelcomeGui"
+	Gui.ResetOnSpawn = false
+	Gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-    local Frame = Instance.new("Frame", Gui)
-    Frame.Size = UDim2.fromOffset(300,70)
-    Frame.Position = UDim2.new(1,-310,1,-80)
-    Frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
-    Frame.BackgroundTransparency = 1
-    Frame.BorderSizePixel = 0
-    Frame.Active = true
-    Frame.Draggable = true
-    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0,12)
-    Frame.ClipsDescendants = true
-    Tween(Frame, {BackgroundTransparency=0}, 0.2):Play()
+	local Frame = Instance.new("Frame", Gui)
+	Frame.Size = UDim2.fromOffset(300,70)
+	Frame.Position = UDim2.new(1,-310,1,-80)
+	Frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+	Frame.BackgroundTransparency = 1
+	Frame.BorderSizePixel = 0
+	Frame.Active = true
+	Frame.Draggable = true
+	Instance.new("UICorner", Frame).CornerRadius = UDim.new(0,12)
+	Frame.ClipsDescendants = true
 
-    local thumb = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size48x48)
-    local Avatar = Instance.new("ImageLabel", Frame)
-    Avatar.Size = UDim2.fromOffset(50,50)
-    Avatar.Position = UDim2.fromOffset(10,10)
-    Avatar.BackgroundTransparency = 1
-    Avatar.Image = thumb
-    Instance.new("UICorner", Avatar).CornerRadius = UDim.new(0,25)
+	Tween(Frame,{BackgroundTransparency=0},0.2):Play()
 
-    local Label = Instance.new("TextLabel", Frame)
-    Label.Size = UDim2.fromOffset(230,50)
-    Label.Position = UDim2.fromOffset(70,10)
-    Label.BackgroundTransparency = 1
-    Label.Text = "Welcome to Icy's Hub - "..LocalPlayer.Name
-    Label.Font = Enum.Font.Gotham
-    Label.TextSize = 16
-    Label.TextColor3 = Color3.fromRGB(255,255,255)
-    Label.TextTransparency = 0.5
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.TextYAlignment = Enum.TextYAlignment.Center
+	local thumb = Players:GetUserThumbnailAsync(
+		LocalPlayer.UserId,
+		Enum.ThumbnailType.AvatarBust,
+		Enum.ThumbnailSize.Size48x48
+	)
 
-    local ProgressBg = Instance.new("Frame", Frame)
-    ProgressBg.Size = UDim2.fromScale(0.9,0.15)
-    ProgressBg.Position = UDim2.fromScale(0.05,0.75)
-    ProgressBg.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    Instance.new("UICorner", ProgressBg).CornerRadius = UDim.new(0,6)
+	local Avatar = Instance.new("ImageLabel", Frame)
+	Avatar.Size = UDim2.fromOffset(50,50)
+	Avatar.Position = UDim2.fromOffset(10,10)
+	Avatar.BackgroundTransparency = 1
+	Avatar.Image = thumb
+	Instance.new("UICorner", Avatar).CornerRadius = UDim.new(0,25)
 
-    local Progress = Instance.new("Frame", ProgressBg)
-    Progress.Size = UDim2.fromScale(0,1)
-    Progress.BackgroundColor3 = Color3.fromRGB(0,170,255)
-    Instance.new("UICorner", Progress).CornerRadius = UDim.new(0,6)
+	local Label = Instance.new("TextLabel", Frame)
+	Label.Size = UDim2.fromOffset(230,50)
+	Label.Position = UDim2.fromOffset(70,10)
+	Label.BackgroundTransparency = 1
+	Label.Text = "Welcome to Icy's Hub - "..LocalPlayer.Name
+	Label.Font = Enum.Font.Gotham
+	Label.TextSize = 16
+	Label.TextColor3 = Color3.fromRGB(255,255,255)
+	Label.TextTransparency = 0.5
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextYAlignment = Enum.TextYAlignment.Center
 
-    local startTime = tick()
-    local conn
-    conn = RunService.RenderStepped:Connect(function()
-        local elapsed = tick() - startTime
-        local progress = math.clamp(elapsed/duration,0,1)
-        Progress.Size = UDim2.fromScale(progress,1)
-        if progress >= 1 then
-            conn:Disconnect()
-            Tween(Frame,{BackgroundTransparency=1},0.2):Play()
-            wait(0.2)
-            Gui:Destroy()
-        end
-    end)
+	local ProgressBg = Instance.new("Frame", Frame)
+	ProgressBg.Size = UDim2.fromScale(0.9,0.15)
+	ProgressBg.Position = UDim2.fromScale(0.05,0.75)
+	ProgressBg.BackgroundColor3 = Color3.fromRGB(50,50,50)
+	Instance.new("UICorner", ProgressBg)
+
+	local Progress = Instance.new("Frame", ProgressBg)
+	Progress.Size = UDim2.fromScale(0,1)
+	Progress.BackgroundColor3 = Color3.fromRGB(0,170,255)
+	Instance.new("UICorner", Progress)
+
+	local startTime = tick()
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		local elapsed = tick() - startTime
+		local progress = math.clamp(elapsed/duration,0,1)
+		Progress.Size = UDim2.fromScale(progress,1)
+
+		if progress >= 1 then
+			conn:Disconnect()
+			Tween(Frame,{BackgroundTransparency=1},0.2):Play()
+			wait(0.2)
+			Gui:Destroy()
+		end
+	end)
 end
 
 --// KEY GUI
@@ -212,11 +222,11 @@ DiscordButton.Font = Enum.Font.Gotham
 DiscordButton.TextSize = 14
 DiscordButton.TextColor3 = Color3.fromRGB(0,170,255)
 DiscordButton.TextWrapped = true
-DiscordButton.TextXAlignment = Enum.TextXAlignment.Center
-DiscordButton.TextYAlignment = Enum.TextYAlignment.Center
-DiscordButton.AutoButtonColor = true
+
 DiscordButton.MouseButton1Click:Connect(function()
-    pcall(function() GuiService:OpenBrowserWindow("https://discord.gg/bgX8GE6NSN") end)
+	pcall(function()
+		GuiService:OpenBrowserWindow("https://discord.gg/bgX8GE6NSN")
+	end)
 end)
 
 local Status = Instance.new("TextLabel", KeyFrame)
@@ -238,22 +248,18 @@ local MainFrame = Instance.new("Frame", MainGui)
 MainFrame.Size = UDim2.fromOffset(420,300)
 MainFrame.Position = UDim2.fromScale(0.5,0.5) - UDim2.fromOffset(210,150)
 MainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,16)
 
--- Gradient + glow
 local UIGradient = Instance.new("UIGradient", MainFrame)
 UIGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(30,30,40)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(35,35,50))
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(30,30,40)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(35,35,50))
 }
 
--- Floating particles
 AddParticles(MainFrame)
 
--- Header
 local Header = Instance.new("TextLabel", MainFrame)
 Header.Size = UDim2.new(1,0,0,40)
 Header.BackgroundTransparency = 1
@@ -262,7 +268,6 @@ Header.Font = Enum.Font.GothamBold
 Header.TextSize = 22
 Header.TextColor3 = Color3.fromRGB(255,255,255)
 
--- Close / Minimize
 local Close = Instance.new("TextButton", MainFrame)
 Close.Text = "X"
 Close.Font = Enum.Font.GothamBold
@@ -271,7 +276,7 @@ Close.Size = UDim2.fromOffset(30,30)
 Close.Position = UDim2.new(1,-35,0,5)
 Close.BackgroundColor3 = Color3.fromRGB(170,50,50)
 Close.TextColor3 = Color3.fromRGB(255,255,255)
-Instance.new("UICorner", Close).CornerRadius = UDim.new(0,6)
+Instance.new("UICorner", Close)
 
 local Min = Instance.new("TextButton", MainFrame)
 Min.Text = "-"
@@ -281,79 +286,88 @@ Min.Size = UDim2.fromOffset(30,30)
 Min.Position = UDim2.new(1,-70,0,5)
 Min.BackgroundColor3 = Color3.fromRGB(80,80,80)
 Min.TextColor3 = Color3.fromRGB(255,255,255)
-Instance.new("UICorner", Min).CornerRadius = UDim.new(0,6)
+Instance.new("UICorner", Min)
 
--- Button Holder
 local ButtonHolder = Instance.new("Frame", MainFrame)
 ButtonHolder.Position = UDim2.new(0,0,0,40)
 ButtonHolder.Size = UDim2.new(1,0,1,-40)
 ButtonHolder.BackgroundTransparency = 1
 
--- Minimize functionality
 local minimized = false
 Min.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    if minimized then
-        ButtonHolder.Visible = false
-        MainFrame.Size = UDim2.fromOffset(420,40)
-    else
-        ButtonHolder.Visible = true
-        MainFrame.Size = UDim2.fromOffset(420,300)
-    end
+	minimized = not minimized
+	if minimized then
+		ButtonHolder.Visible = false
+		MainFrame.Size = UDim2.fromOffset(420,40)
+	else
+		ButtonHolder.Visible = true
+		MainFrame.Size = UDim2.fromOffset(420,300)
+	end
 end)
 
--- Close
 Close.MouseButton1Click:Connect(function()
-    MainGui:Destroy()
+	MainGui:Destroy()
 end)
 
--- Buttons setup
-local names = {"ESP","Aimbot","Admin","Fly","Speed","Anti-AFK"}
+-- BUTTONS
+local names = {
+	"ESP",
+	"Aimbot",
+	"Admin",
+	"Fly",
+	"Speed",
+	"Anti-AFK",
+	"Anti-VC-Ban"
+}
+
 local urls = {
-    "https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/esp",
-    "https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/aimbot",
-    "https://raw.githubusercontent.com/ltseverydayyou/Nameless-Admin/main/Source.lua",
-    "https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/fly",
-    "https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/speed%20script",
-    "https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/anti-afk"
+	"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/esp",
+	"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/aimbot",
+	"https://raw.githubusercontent.com/ltseverydayyou/Nameless-Admin/main/Source.lua",
+	"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/fly",
+	"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/speed%20script",
+	"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/anti-afk",
+	"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/anti%20vc%20ban"
 }
 
 for i=1,#names do
-    local b = Instance.new("TextButton", ButtonHolder)
-    b.Size = UDim2.fromOffset(120,35)
-    b.Position = UDim2.new(0.05 + ((i-1)%3)*0.32,0,0.05 + math.floor((i-1)/3)*0.18,0)
-    b.Text = names[i]
-    b.Font = Enum.Font.GothamBold
-    b.TextSize = 18
-    b.TextColor3 = Color3.fromRGB(255,255,255)
-    b.BackgroundColor3 = Color3.fromRGB(45,45,45)
-    Instance.new("UICorner", b)
+	local b = Instance.new("TextButton", ButtonHolder)
+	b.Size = UDim2.fromOffset(120,35)
+	b.Position = UDim2.new(0.05 + ((i-1)%3)*0.32,0,0.05 + math.floor((i-1)/3)*0.18,0)
+	b.Text = names[i]
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 18
+	b.TextColor3 = Color3.fromRGB(255,255,255)
+	b.BackgroundColor3 = Color3.fromRGB(45,45,45)
+	Instance.new("UICorner", b)
 
-    b.MouseButton1Click:Connect(function()
-        ShowProgressBar(1,"Loading...",function() -- now 1 second
-            loadstring(game:HttpGet(urls[i]))()
-        end)
-    end)
+	b.MouseButton1Click:Connect(function()
+		ShowProgressBar(1,"Loading...",function()
+			loadstring(game:HttpGet(urls[i]))()
+		end)
+	end)
 end
 
 --// KEY CHECK
 KeyBox.FocusLost:Connect(function(enter)
-    if not enter then return end
-    local inputKey = KeyBox.Text:gsub("%s+","")
-    if inputKey:lower() == "naruto" then
-        LocalPlayer:Kick("fuck you")
-        return
-    end
-    if ValidKeys[inputKey] then
-        KeyGui:Destroy()
-        ShowProgressBar(1,"Loading...",function() -- now 1 second
-            MainGui.Enabled = true
-            ShowWelcomeMessage(1) -- now 1 second
-        end)
-    else
-        Status.Text = "Invalid Key"
-        Status.TextColor3 = Color3.fromRGB(255,0,0)
-        KeyBox.Text = ""
-    end
-end)
+	if not enter then return end
 
+	local inputKey = KeyBox.Text:gsub("%s+","")
+
+	if inputKey:lower() == "naruto" then
+		LocalPlayer:Kick("fuck you")
+		return
+	end
+
+	if ValidKeys[inputKey] then
+		KeyGui:Destroy()
+		ShowProgressBar(1,"Loading...",function()
+			MainGui.Enabled = true
+			ShowWelcomeMessage(1)
+		end)
+	else
+		Status.Text = "Invalid Key"
+		Status.TextColor3 = Color3.fromRGB(255,0,0)
+		KeyBox.Text = ""
+	end
+end)
