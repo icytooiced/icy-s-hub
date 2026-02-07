@@ -17,7 +17,7 @@ local ValidKeys = {
 	["7681995313"] = true,
 	["0899694468"] = true,
 	["xyra"] = true,
-	["vetementsdickis1inch"] = true
+	["725849"] = true
 }
 
 --// SAVE / LOAD KEY
