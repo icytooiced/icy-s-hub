@@ -11,7 +11,7 @@ local LocalPlayer = Players.LocalPlayer
 -- version
 local VERSION = "v2.7.4"
 
---// EXECUTOR DETECTION (SAFE / VISUAL)
+--// EXECUTOR DETECTION 
 local function getExecutor()
 	if identifyexecutor then
 		local ok, name = pcall(identifyexecutor)
@@ -36,7 +36,7 @@ TweenService:Create(blur, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {
 	Size = 18
 }):Play()
 
---// SNOW PARTICLES (SECURITY ONLY)
+--// SNOW PARTICLES 
 local snowGui = Instance.new("ScreenGui")
 snowGui.Name = "IcysSecuritySnow"
 snowGui.IgnoreGuiInset = true
@@ -50,7 +50,7 @@ snowFrame.Parent = snowGui
 
 local snowRunning = true
 
--- Function to spawn a single snowflake
+--snowflake
 local function spawnSnowflake()
 	local flake = Instance.new("ImageLabel")
 	flake.BackgroundTransparency = 1
@@ -82,7 +82,7 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 
---// GUI SETUP
+--// GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "IcysSecurityGUI"
 gui.ResetOnSpawn = false
