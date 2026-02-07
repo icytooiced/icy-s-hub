@@ -1,9 +1,7 @@
 --// SERVICES
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local GuiService = game:GetService("GuiService")
-local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -12,15 +10,19 @@ local SAVE_KEY_FILE = "icys_key.txt"
 
 --// VALID KEYS
 local ValidKeys = {
-	["6631044286"] = true,
-	["6232749547"] = true,
-	["7681995313"] = true,
-	["0899694468"] = true,
-	["xyra"] = true,
-	["725849"] = true
+	["55865349"] = true,
+	["99575032"] = true,
+	["53320942"] = true,
+	["92378629"] = true,
+	["76139575"] = true,
+	["vetements"] = true,
+	["icysprivatekey"] = true
 }
 
---// SAVE / LOAD KEY
+--------------------------------------------------------------------
+-- SAVE / LOAD KEY
+--------------------------------------------------------------------
+
 local function SaveKey(key)
 	if writefile then
 		writefile(SAVE_KEY_FILE, key)
@@ -33,16 +35,22 @@ local function LoadKey()
 	end
 end
 
---// TWEEN HELPER
-local function Tween(obj, props, time, style, dir)
+--------------------------------------------------------------------
+-- TWEEN HELPER
+--------------------------------------------------------------------
+
+local function Tween(obj, props, time)
 	return TweenService:Create(
 		obj,
-		TweenInfo.new(time or 0.25, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out),
+		TweenInfo.new(time or 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
 		props
 	)
 end
 
---// TEXT GLOW ANIMATION
+--------------------------------------------------------------------
+-- TEXT ANIMATION
+--------------------------------------------------------------------
+
 local function AnimateText(label)
 	task.spawn(function()
 		while label.Parent do
@@ -67,24 +75,21 @@ local KeyFrame = Instance.new("Frame", KeyGui)
 KeyFrame.Size = UDim2.fromOffset(360,220)
 KeyFrame.Position = UDim2.fromScale(0.5,0.5)
 KeyFrame.AnchorPoint = Vector2.new(0.5,0.5)
-KeyFrame.BackgroundColor3 = Color3.fromRGB(20,20,25)
+KeyFrame.BackgroundColor3 = Color3.fromRGB(20,20,26)
 KeyFrame.Active = true
 KeyFrame.Draggable = true
-Instance.new("UICorner", KeyFrame).CornerRadius = UDim.new(0,20)
+Instance.new("UICorner", KeyFrame).CornerRadius = UDim.new(0,18)
 
-local keyShadow = Instance.new("UIStroke", KeyFrame)
-keyShadow.Color = Color3.fromRGB(0,170,255)
-keyShadow.Thickness = 1.5
-keyShadow.Transparency = 0.5
-
-Tween(KeyFrame,{Size=UDim2.fromOffset(380,240)},0.35):Play()
+local stroke = Instance.new("UIStroke", KeyFrame)
+stroke.Color = Color3.fromRGB(0,170,255)
+stroke.Transparency = 0.5
 
 local Title = Instance.new("TextLabel", KeyFrame)
 Title.Size = UDim2.new(1,0,0,40)
 Title.BackgroundTransparency = 1
 Title.Text = "Enter Key"
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 28
+Title.TextSize = 26
 Title.TextColor3 = Color3.fromRGB(0,170,255)
 AnimateText(Title)
 
@@ -93,42 +98,34 @@ KeyBox.Size = UDim2.fromScale(0.8,0.22)
 KeyBox.Position = UDim2.fromScale(0.1,0.38)
 KeyBox.PlaceholderText = "Key here..."
 KeyBox.Text = ""
-KeyBox.ClearTextOnFocus = false
 KeyBox.Font = Enum.Font.Gotham
 KeyBox.TextSize = 18
-KeyBox.TextColor3 = Color3.fromRGB(255,255,255)
+KeyBox.TextColor3 = Color3.new(1,1,1)
 KeyBox.BackgroundColor3 = Color3.fromRGB(35,35,40)
 Instance.new("UICorner", KeyBox)
 
-local inputGradient = Instance.new("UIGradient", KeyBox)
-inputGradient.Color = ColorSequence.new{
-	ColorSequenceKeypoint.new(0,Color3.fromRGB(0,170,255)),
-	ColorSequenceKeypoint.new(1,Color3.fromRGB(80,200,255))
-}
+local DiscordLabel = Instance.new("TextButton", KeyFrame)
+DiscordLabel.Size = UDim2.fromScale(1,0.2)
+DiscordLabel.Position = UDim2.fromScale(0,0.62)
+DiscordLabel.BackgroundTransparency = 1
+DiscordLabel.Text = "Key in the Discord server\ndiscord.gg/bgX8GE6NSN"
+DiscordLabel.Font = Enum.Font.Gotham
+DiscordLabel.TextSize = 14
+DiscordLabel.TextColor3 = Color3.fromRGB(0,170,255)
+DiscordLabel.TextWrapped = true
 
-local Discord = Instance.new("TextButton", KeyFrame)
-Discord.Size = UDim2.fromScale(1,0.18)
-Discord.Position = UDim2.fromScale(0,0.66)
-Discord.BackgroundTransparency = 1
-Discord.Text = "Key can be found in Discord:\ndiscord.gg/bgX8GE6NSN"
-Discord.Font = Enum.Font.Gotham
-Discord.TextSize = 14
-Discord.TextColor3 = Color3.fromRGB(0,170,255)
-Discord.TextWrapped = true
-
-Discord.MouseButton1Click:Connect(function()
+DiscordLabel.MouseButton1Click:Connect(function()
 	pcall(function()
 		GuiService:OpenBrowserWindow("https://discord.gg/bgX8GE6NSN")
 	end)
 end)
 
 local Status = Instance.new("TextLabel", KeyFrame)
-Status.Size = UDim2.new(1,0,0,22)
+Status.Size = UDim2.new(1,0,0,20)
 Status.Position = UDim2.fromScale(0,0.88)
 Status.BackgroundTransparency = 1
 Status.Font = Enum.Font.GothamBold
 Status.TextSize = 16
-Status.Text = ""
 
 --------------------------------------------------------------------
 -- MAIN GUI
@@ -140,18 +137,21 @@ MainGui.Enabled = false
 MainGui.Parent = LocalPlayer.PlayerGui
 
 local MainFrame = Instance.new("Frame", MainGui)
-MainFrame.Size = UDim2.fromOffset(440,320)
+MainFrame.Size = UDim2.fromOffset(470,350)
 MainFrame.Position = UDim2.fromScale(0.5,0.5)
 MainFrame.AnchorPoint = Vector2.new(0.5,0.5)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25,25,30)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20,20,26)
 MainFrame.Active = true
 MainFrame.Draggable = true
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,20)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,18)
 
-local frameStroke = Instance.new("UIStroke", MainFrame)
-frameStroke.Color = Color3.fromRGB(0,170,255)
-frameStroke.Thickness = 1.5
-frameStroke.Transparency = 0.6
+local mainStroke = Instance.new("UIStroke", MainFrame)
+mainStroke.Color = Color3.fromRGB(0,170,255)
+mainStroke.Transparency = 0.4
+
+--------------------------------------------------------------------
+-- HEADER
+--------------------------------------------------------------------
 
 local Header = Instance.new("TextLabel", MainFrame)
 Header.Size = UDim2.new(1,0,0,40)
@@ -166,13 +166,72 @@ local Close = Instance.new("TextButton", MainFrame)
 Close.Text = "X"
 Close.Size = UDim2.fromOffset(30,30)
 Close.Position = UDim2.new(1,-35,0,5)
-Close.BackgroundColor3 = Color3.fromRGB(180,50,50)
-Close.TextColor3 = Color3.fromRGB(255,255,255)
+Close.BackgroundColor3 = Color3.fromRGB(190,60,60)
+Close.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", Close)
 
 Close.MouseButton1Click:Connect(function()
 	MainGui:Destroy()
 end)
+
+local Minimize = Instance.new("TextButton", MainFrame)
+Minimize.Text = "-"
+Minimize.Size = UDim2.fromOffset(30,30)
+Minimize.Position = UDim2.new(1,-70,0,5)
+Minimize.BackgroundColor3 = Color3.fromRGB(60,60,70)
+Minimize.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", Minimize)
+
+--------------------------------------------------------------------
+-- BUTTON HOLDER
+--------------------------------------------------------------------
+
+local ButtonHolder = Instance.new("Frame", MainFrame)
+ButtonHolder.Size = UDim2.new(1,-20,1,-60)
+ButtonHolder.Position = UDim2.new(0,10,0,50)
+ButtonHolder.BackgroundTransparency = 1
+
+local minimized = false
+
+Minimize.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	if minimized then
+		Tween(MainFrame,{Size = UDim2.fromOffset(470,60)},0.25):Play()
+		ButtonHolder.Visible = false
+	else
+		Tween(MainFrame,{Size = UDim2.fromOffset(470,350)},0.25):Play()
+		task.wait(0.1)
+		ButtonHolder.Visible = true
+	end
+end)
+
+--------------------------------------------------------------------
+-- LOADING NOTIFICATION
+--------------------------------------------------------------------
+
+local function ShowLoading(text)
+	local loadFrame = Instance.new("Frame", MainGui)
+	loadFrame.Size = UDim2.fromOffset(260,90)
+	loadFrame.Position = UDim2.fromScale(0.5,0.9)
+	loadFrame.AnchorPoint = Vector2.new(0.5,0.5)
+	loadFrame.BackgroundColor3 = Color3.fromRGB(20,20,26)
+	Instance.new("UICorner", loadFrame)
+
+	local stroke = Instance.new("UIStroke", loadFrame)
+	stroke.Color = Color3.fromRGB(0,170,255)
+
+	local label = Instance.new("TextLabel", loadFrame)
+	label.Size = UDim2.new(1,0,1,0)
+	label.BackgroundTransparency = 1
+	label.Text = "Loading "..text.."..."
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 18
+	label.TextColor3 = Color3.fromRGB(0,170,255)
+
+	task.delay(2,function()
+		loadFrame:Destroy()
+	end)
+end
 
 --------------------------------------------------------------------
 -- BUTTONS
@@ -194,28 +253,19 @@ local urls = {
 }
 
 for i=1,#names do
-	local b = Instance.new("TextButton", MainFrame)
+	local b = Instance.new("TextButton", ButtonHolder)
 	b.Size = UDim2.fromOffset(140,36)
-	b.Position = UDim2.new(0.05 + ((i-1)%3)*0.3,0,0.18 + math.floor((i-1)/3)*0.16,0)
+	b.Position = UDim2.new(0.05 + ((i-1)%3)*0.3,0,0.02 + math.floor((i-1)/3)*0.18,0)
 	b.Text = names[i]
 	b.Font = Enum.Font.GothamBold
 	b.TextSize = 18
-	b.TextColor3 = Color3.fromRGB(255,255,255)
+	b.TextColor3 = Color3.new(1,1,1)
 	b.BackgroundColor3 = Color3.fromRGB(40,40,50)
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0,12)
-
-	-- Hover animation
-	b.MouseEnter:Connect(function()
-		Tween(b,{BackgroundColor3 = Color3.fromRGB(0,170,255)},0.2):Play()
-		Tween(b,{TextColor3 = Color3.fromRGB(20,20,25)},0.2):Play()
-	end)
-
-	b.MouseLeave:Connect(function()
-		Tween(b,{BackgroundColor3 = Color3.fromRGB(40,40,50)},0.2):Play()
-		Tween(b,{TextColor3 = Color3.fromRGB(255,255,255)},0.2):Play()
-	end)
+	Instance.new("UICorner", b)
 
 	b.MouseButton1Click:Connect(function()
+		ShowLoading(names[i])
+		task.wait(2)
 		loadstring(game:HttpGet(urls[i]))()
 	end)
 end
@@ -241,7 +291,6 @@ KeyBox.FocusLost:Connect(function(enterPressed)
 	end
 end)
 
--- AUTO LOGIN
 local saved = LoadKey()
 if saved and ValidKeys[saved] then
 	KeyGui:Destroy()
