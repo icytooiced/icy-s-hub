@@ -2,6 +2,7 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local GuiService = game:GetService("GuiService")
+local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -69,7 +70,9 @@ end
 local KeyGui = Instance.new("ScreenGui")
 KeyGui.Name = "KeyGui"
 KeyGui.ResetOnSpawn = false
-KeyGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+KeyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+KeyGui.DisplayOrder = 999
+KeyGui.Parent = CoreGui
 
 local KeyFrame = Instance.new("Frame", KeyGui)
 KeyFrame.Size = UDim2.fromOffset(360,220)
@@ -134,7 +137,10 @@ Status.TextSize = 16
 local MainGui = Instance.new("ScreenGui")
 MainGui.Name = "IcysHub"
 MainGui.Enabled = false
-MainGui.Parent = LocalPlayer.PlayerGui
+MainGui.ResetOnSpawn = false
+MainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+MainGui.DisplayOrder = 999
+MainGui.Parent = CoreGui
 
 local MainFrame = Instance.new("Frame", MainGui)
 MainFrame.Size = UDim2.fromOffset(470,350)
