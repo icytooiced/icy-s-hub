@@ -236,7 +236,7 @@ end
 --------------------------------------------------------------------
 
 local names = {
-	"ESP","Aimbot","Admin","Fly","Speed","Anti-AFK","Anti-VC-Ban","Quiz Bot","Rivals"
+	"ESP","Aimbot","Admin","Fly","Speed","Anti-AFK","Anti-VC-Ban","Quiz Bot","Rivals","Team-ESP"
 }
 
 local urls = {
@@ -248,7 +248,8 @@ local urls = {
 	"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/anti-afk",
 	"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/anti%20vc%20ban",
 	"https://raw.githubusercontent.com/Damian-11/quizbot/master/quizbot.luau",
-	"https://raw.githubusercontent.com/prostone55/NitoHub/refs/heads/main/RivalsMain.lua"
+	"https://raw.githubusercontent.com/prostone55/NitoHub/refs/heads/main/RivalsMain.lua",
+	"https://raw.githubusercontent.com/icytooiced/icy-s-hub/refs/heads/main/team%20esp"
 }
 
 for i=1,#names do
