@@ -1,56 +1,473 @@
-local teamCheck = false
-local fov = 150
-local smoothing = 1
-
+--// SERVICES
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
 
-local FOVring = Drawing.new("Circle")
-FOVring.Visible = true
-FOVring.Thickness = 1.5
-FOVring.Radius = fov
-FOVring.Transparency = 1
-FOVring.Color = Color3.fromRGB(255, 128, 128)
-FOVring.Position = workspace.CurrentCamera.ViewportSize/2
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Camera = Workspace.CurrentCamera
 
-local function getClosest(cframe)
-   local ray = Ray.new(cframe.Position, cframe.LookVector).Unit
-   
-   local target = nil
-   local mag = math.huge
-   
-   for i,v in pairs(game.Players:GetPlayers()) do
-       if v.Character and v.Character:FindFirstChild("Head") and v.Character:FindFirstChild("Humanoid") and v.Character:FindFirstChild("HumanoidRootPart") and v ~= game.Players.LocalPlayer and (v.Team ~= game.Players.LocalPlayer.Team or (not teamCheck)) then
-           local magBuf = (v.Character.Head.Position - ray:ClosestPoint(v.Character.Head.Position)).Magnitude
-           
-           if magBuf < mag then
-               mag = magBuf
-               target = v
-           end
-       end
-   end
-   
-   return target
+--// AIMBOT SETTINGS
+local AimbotEnabled = true
+local TeamCheck = true
+local WallCheck = true
+local VisibleCheck = true
+local TargetPart = "Head" -- Head, Torso, HumanoidRootPart
+local FOV = 200
+local Smoothness = 0.1
+local ShowFOVCircle = true
+local AimKey = Enum.UserInputType.MouseButton2 -- Right click to aim
+
+--// AIMBOT STATE
+local Aiming = false
+local LockedTarget = nil
+
+--// FUNCTIONS
+local function Tween(obj, props, time)
+	return TweenService:Create(
+		obj,
+		TweenInfo.new(time or 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		props
+	)
 end
 
-loop = RunService.RenderStepped:Connect(function()
-   local UserInputService = game:GetService("UserInputService")
-   local pressed = --[[UserInputService:IsKeyDown(Enum.KeyCode.E)]] UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) --Enum.UserInputType.MouseButton2
-   local localPlay = game.Players.localPlayer.Character
-   local cam = workspace.CurrentCamera
-   local zz = workspace.CurrentCamera.ViewportSize/2
-   
-   if pressed then
-       local Line = Drawing.new("Line")
-       local curTar = getClosest(cam.CFrame)
-       local ssHeadPoint = cam:WorldToScreenPoint(curTar.Character.Head.Position)
-       ssHeadPoint = Vector2.new(ssHeadPoint.X, ssHeadPoint.Y)
-       if (ssHeadPoint - zz).Magnitude < fov then
-           workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame:Lerp(CFrame.new(cam.CFrame.Position, curTar.Character.Head.Position), smoothing)
-       end
-   end
-   
-   if UserInputService:IsKeyDown(Enum.KeyCode.Delete) then
-       loop:Disconnect()
-       FOVring:Remove()
-   end
+local function AnimateText(label)
+	task.spawn(function()
+		while label.Parent do
+			Tween(label, {TextColor3 = Color3.fromRGB(0, 170, 255)}, 1):Play()
+			task.wait(1)
+			Tween(label, {TextColor3 = Color3.fromRGB(180, 220, 255)}, 1):Play()
+			task.wait(1)
+		end
+	end)
+end
+
+--// CREATE GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "IcysAimbot"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.DisplayOrder = 999
+ScreenGui.Parent = CoreGui
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.fromOffset(340, 480)
+MainFrame.Position = UDim2.fromScale(0.02, 0.15)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+MainFrame.Active = true
+MainFrame.Draggable = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 18)
+
+local mainStroke = Instance.new("UIStroke", MainFrame)
+mainStroke.Color = Color3.fromRGB(0, 170, 255)
+mainStroke.Transparency = 0.4
+
+local Header = Instance.new("TextLabel", MainFrame)
+Header.Size = UDim2.new(1, 0, 0, 40)
+Header.BackgroundTransparency = 1
+Header.Text = "Icy's Aimbot"
+Header.Font = Enum.Font.GothamBold
+Header.TextSize = 24
+Header.TextColor3 = Color3.fromRGB(0, 170, 255)
+AnimateText(Header)
+
+local Close = Instance.new("TextButton", MainFrame)
+Close.Text = "X"
+Close.Size = UDim2.fromOffset(30, 30)
+Close.Position = UDim2.new(1, -35, 0, 5)
+Close.BackgroundColor3 = Color3.fromRGB(190, 60, 60)
+Close.TextColor3 = Color3.new(1, 1, 1)
+Close.Font = Enum.Font.GothamBold
+Close.TextSize = 18
+Instance.new("UICorner", Close)
+
+Close.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
+end)
+
+local Minimize = Instance.new("TextButton", MainFrame)
+Minimize.Text = "-"
+Minimize.Size = UDim2.fromOffset(30, 30)
+Minimize.Position = UDim2.new(1, -70, 0, 5)
+Minimize.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+Minimize.TextColor3 = Color3.new(1, 1, 1)
+Minimize.Font = Enum.Font.GothamBold
+Minimize.TextSize = 18
+Instance.new("UICorner", Minimize)
+
+local minimized = false
+
+Minimize.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	if minimized then
+		Tween(MainFrame, {Size = UDim2.fromOffset(340, 60)}, 0.25):Play()
+	else
+		Tween(MainFrame, {Size = UDim2.fromOffset(340, 480)}, 0.25):Play()
+	end
+end)
+
+--// SCROLL FRAME
+local ScrollFrame = Instance.new("ScrollingFrame", MainFrame)
+ScrollFrame.Size = UDim2.new(1, -20, 1, -60)
+ScrollFrame.Position = UDim2.new(0, 10, 0, 50)
+ScrollFrame.BackgroundTransparency = 1
+ScrollFrame.BorderSizePixel = 0
+ScrollFrame.ScrollBarThickness = 6
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+local Layout = Instance.new("UIListLayout", ScrollFrame)
+Layout.Padding = UDim.new(0, 10)
+Layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+local Padding = Instance.new("UIPadding", ScrollFrame)
+Padding.PaddingTop = UDim.new(0, 10)
+Padding.PaddingBottom = UDim.new(0, 10)
+Padding.PaddingLeft = UDim.new(0, 10)
+Padding.PaddingRight = UDim.new(0, 10)
+
+--// HELPER FUNCTION TO CREATE TOGGLE
+local function CreateToggle(parent, labelText, defaultValue, callback)
+	local frame = Instance.new("Frame", parent)
+	frame.Size = UDim2.new(1, 0, 0, 50)
+	frame.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+	local label = Instance.new("TextLabel", frame)
+	label.Size = UDim2.new(1, -120, 1, 0)
+	label.Position = UDim2.new(0, 15, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = labelText
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 16
+	label.TextColor3 = Color3.fromRGB(220, 220, 230)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+
+	local toggle = Instance.new("TextButton", frame)
+	toggle.Size = UDim2.fromOffset(80, 32)
+	toggle.Position = UDim2.new(1, -95, 0.5, 0)
+	toggle.AnchorPoint = Vector2.new(0, 0.5)
+	toggle.BackgroundColor3 = defaultValue and Color3.fromRGB(60, 190, 60) or Color3.fromRGB(190, 60, 60)
+	toggle.Text = defaultValue and "ON" or "OFF"
+	toggle.Font = Enum.Font.GothamBold
+	toggle.TextSize = 14
+	toggle.TextColor3 = Color3.new(1, 1, 1)
+	Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 8)
+
+	local enabled = defaultValue
+	toggle.MouseButton1Click:Connect(function()
+		enabled = not enabled
+		callback(enabled)
+
+		if enabled then
+			toggle.Text = "ON"
+			toggle.BackgroundColor3 = Color3.fromRGB(60, 190, 60)
+		else
+			toggle.Text = "OFF"
+			toggle.BackgroundColor3 = Color3.fromRGB(190, 60, 60)
+		end
+	end)
+
+	return toggle
+end
+
+--// HELPER FUNCTION TO CREATE SLIDER
+local function CreateSlider(parent, labelText, minVal, maxVal, defaultVal, callback)
+	local frame = Instance.new("Frame", parent)
+	frame.Size = UDim2.new(1, 0, 0, 70)
+	frame.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+	local label = Instance.new("TextLabel", frame)
+	label.Size = UDim2.new(1, -20, 0, 25)
+	label.Position = UDim2.new(0, 10, 0, 5)
+	label.BackgroundTransparency = 1
+	label.Text = labelText .. ": " .. defaultVal
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 16
+	label.TextColor3 = Color3.fromRGB(220, 220, 230)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+
+	local sliderBG = Instance.new("Frame", frame)
+	sliderBG.Size = UDim2.new(1, -20, 0, 8)
+	sliderBG.Position = UDim2.new(0, 10, 1, -20)
+	sliderBG.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+	Instance.new("UICorner", sliderBG).CornerRadius = UDim.new(1, 0)
+
+	local sliderFill = Instance.new("Frame", sliderBG)
+	sliderFill.Size = UDim2.new((defaultVal - minVal) / (maxVal - minVal), 0, 1, 0)
+	sliderFill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+	Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
+
+	local sliderButton = Instance.new("TextButton", sliderBG)
+	sliderButton.Size = UDim2.new(1, 0, 1, 0)
+	sliderButton.BackgroundTransparency = 1
+	sliderButton.Text = ""
+
+	local dragging = false
+	sliderButton.MouseButton1Down:Connect(function()
+		dragging = true
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+			local mouse = LocalPlayer:GetMouse()
+			local relativeX = math.clamp((mouse.X - sliderBG.AbsolutePosition.X) / sliderBG.AbsoluteSize.X, 0, 1)
+			local value = math.floor(minVal + (maxVal - minVal) * relativeX)
+			
+			sliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
+			label.Text = labelText .. ": " .. value
+			callback(value)
+		end
+	end)
+
+	return sliderButton
+end
+
+--// HELPER FUNCTION TO CREATE DROPDOWN
+local function CreateDropdown(parent, labelText, options, defaultValue, callback)
+	local frame = Instance.new("Frame", parent)
+	frame.Size = UDim2.new(1, 0, 0, 50)
+	frame.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+	local label = Instance.new("TextLabel", frame)
+	label.Size = UDim2.new(0.5, -10, 1, 0)
+	label.Position = UDim2.new(0, 15, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = labelText
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 16
+	label.TextColor3 = Color3.fromRGB(220, 220, 230)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+
+	local dropdown = Instance.new("TextButton", frame)
+	dropdown.Size = UDim2.new(0.45, 0, 0, 32)
+	dropdown.Position = UDim2.new(0.53, 0, 0.5, 0)
+	dropdown.AnchorPoint = Vector2.new(0, 0.5)
+	dropdown.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+	dropdown.Text = defaultValue
+	dropdown.Font = Enum.Font.GothamBold
+	dropdown.TextSize = 14
+	dropdown.TextColor3 = Color3.new(1, 1, 1)
+	Instance.new("UICorner", dropdown).CornerRadius = UDim.new(0, 8)
+
+	local dropdownOpen = false
+	local dropdownFrame = Instance.new("Frame", frame)
+	dropdownFrame.Size = UDim2.new(0.45, 0, 0, #options * 35)
+	dropdownFrame.Position = UDim2.new(0.53, 0, 1, 5)
+	dropdownFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+	dropdownFrame.Visible = false
+	dropdownFrame.ZIndex = 10
+	Instance.new("UICorner", dropdownFrame).CornerRadius = UDim.new(0, 8)
+
+	local dropStroke = Instance.new("UIStroke", dropdownFrame)
+	dropStroke.Color = Color3.fromRGB(0, 170, 255)
+
+	local dropLayout = Instance.new("UIListLayout", dropdownFrame)
+	dropLayout.Padding = UDim.new(0, 2)
+
+	for _, option in ipairs(options) do
+		local optionButton = Instance.new("TextButton", dropdownFrame)
+		optionButton.Size = UDim2.new(1, 0, 0, 33)
+		optionButton.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+		optionButton.Text = option
+		optionButton.Font = Enum.Font.Gotham
+		optionButton.TextSize = 13
+		optionButton.TextColor3 = Color3.new(1, 1, 1)
+		optionButton.ZIndex = 11
+
+		optionButton.MouseButton1Click:Connect(function()
+			dropdown.Text = option
+			callback(option)
+			dropdownFrame.Visible = false
+			dropdownOpen = false
+		end)
+	end
+
+	dropdown.MouseButton1Click:Connect(function()
+		dropdownOpen = not dropdownOpen
+		dropdownFrame.Visible = dropdownOpen
+	end)
+
+	return dropdown
+end
+
+--// CREATE TOGGLES AND SLIDERS
+CreateToggle(ScrollFrame, "Aimbot Enabled", true, function(value)
+	AimbotEnabled = value
+end)
+
+CreateToggle(ScrollFrame, "Team Check", true, function(value)
+	TeamCheck = value
+end)
+
+CreateToggle(ScrollFrame, "Wall Check", true, function(value)
+	WallCheck = value
+end)
+
+CreateToggle(ScrollFrame, "Visible Check", true, function(value)
+	VisibleCheck = value
+end)
+
+CreateToggle(ScrollFrame, "Show FOV Circle", true, function(value)
+	ShowFOVCircle = value
+end)
+
+CreateDropdown(ScrollFrame, "Target Part", {"Head", "Torso", "HumanoidRootPart"}, "Head", function(value)
+	TargetPart = value
+end)
+
+CreateSlider(ScrollFrame, "FOV Size", 50, 500, 200, function(value)
+	FOV = value
+end)
+
+CreateSlider(ScrollFrame, "Smoothness", 1, 100, 10, function(value)
+	Smoothness = value / 100
+end)
+
+--// INFO LABEL
+local InfoLabel = Instance.new("TextLabel", ScrollFrame)
+InfoLabel.Size = UDim2.new(1, 0, 0, 80)
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.Text = "Icy's Aimbot - Advanced targeting\n\nHold RIGHT CLICK to aim at targets\nwithin your FOV circle."
+InfoLabel.Font = Enum.Font.Gotham
+InfoLabel.TextSize = 14
+InfoLabel.TextColor3 = Color3.fromRGB(150, 170, 200)
+InfoLabel.TextWrapped = true
+InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+InfoLabel.TextYAlignment = Enum.TextYAlignment.Top
+
+--// FOV CIRCLE
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 2
+FOVCircle.NumSides = 64
+FOVCircle.Radius = FOV
+FOVCircle.Filled = false
+FOVCircle.Color = Color3.fromRGB(0, 170, 255)
+FOVCircle.Transparency = 0.8
+FOVCircle.Visible = ShowFOVCircle
+
+--// AIMBOT FUNCTIONS
+local function IsVisible(targetPart)
+	if not WallCheck then return true end
+	
+	local origin = Camera.CFrame.Position
+	local direction = (targetPart.Position - origin).Unit * 500
+	
+	local ray = Ray.new(origin, direction)
+	local hit, pos = Workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character, Camera})
+	
+	if hit then
+		return hit:IsDescendantOf(targetPart.Parent)
+	end
+	
+	return false
+end
+
+local function GetClosestPlayer()
+	local closestPlayer = nil
+	local shortestDistance = FOV
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character then
+			if TeamCheck and player.Team == LocalPlayer.Team then
+				continue
+			end
+
+			local character = player.Character
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			
+			if humanoid and humanoid.Health > 0 then
+				local targetPart = character:FindFirstChild(TargetPart)
+				
+				if targetPart then
+					if VisibleCheck and not IsVisible(targetPart) then
+						continue
+					end
+
+					local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+					
+					if onScreen then
+						local mousePos = Vector2.new(Mouse.X, Mouse.Y)
+						local targetPos = Vector2.new(screenPos.X, screenPos.Y)
+						local distance = (mousePos - targetPos).Magnitude
+
+						if distance < shortestDistance then
+							closestPlayer = player
+							shortestDistance = distance
+						end
+					end
+				end
+			end
+		end
+	end
+
+	return closestPlayer
+end
+
+local function AimAt(target)
+	if not target or not target.Character then return end
+	
+	local character = target.Character
+	local targetPart = character:FindFirstChild(TargetPart)
+	
+	if not targetPart then return end
+	
+	local targetPos = targetPart.Position
+	local cameraPos = Camera.CFrame.Position
+	local direction = (targetPos - cameraPos).Unit
+	
+	-- Smooth aiming
+	local currentLook = Camera.CFrame.LookVector
+	local newLook = currentLook:Lerp(direction, Smoothness)
+	
+	Camera.CFrame = CFrame.new(cameraPos, cameraPos + newLook)
+end
+
+--// INPUT HANDLING
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	
+	if input.UserInputType == AimKey then
+		Aiming = true
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == AimKey then
+		Aiming = false
+		LockedTarget = nil
+	end
+end)
+
+--// MAIN LOOP
+RunService.RenderStepped:Connect(function()
+	-- Update FOV circle
+	FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y)
+	FOVCircle.Radius = FOV
+	FOVCircle.Visible = ShowFOVCircle
+
+	-- Aimbot logic
+	if AimbotEnabled and Aiming then
+		local target = GetClosestPlayer()
+		if target then
+			LockedTarget = target
+			AimAt(target)
+		end
+	end
+end)
+
+--// CLEANUP
+ScreenGui.Destroying:Connect(function()
+	FOVCircle:Remove()
 end)
