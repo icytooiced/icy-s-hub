@@ -1,198 +1,462 @@
--- CLIENT-SIDED STREAMING-SAFE ESP
-
+--// SERVICES
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local Camera = Workspace.CurrentCamera
 
-local ESP_ENABLED = true
-local ACTIVE = {}
+--// ESP SETTINGS
+local ESPEnabled = true
+local ShowBoxes = true
+local ShowNames = true
+local ShowDistance = true
+local ShowHealth = true
+local ShowTracers = false
+local TeamCheck = false
 
--- ===== TOGGLE (RightShift) =====
-UserInputService.InputBegan:Connect(function(input, gp)
-	if gp then return end
-	if input.KeyCode == Enum.KeyCode.RightShift then
-		ESP_ENABLED = not ESP_ENABLED
-		for _, data in pairs(ACTIVE) do
-			for _, obj in pairs(data) do
-				if obj and obj.SetVisible then
-					obj:SetVisible(ESP_ENABLED)
-				elseif typeof(obj) == "Instance" then
-					obj.Enabled = ESP_ENABLED
+--// ESP STORAGE
+local ESPObjects = {}
+
+--// FUNCTIONS
+local function Tween(obj, props, time)
+	return TweenService:Create(
+		obj,
+		TweenInfo.new(time or 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		props
+	)
+end
+
+local function AnimateText(label)
+	task.spawn(function()
+		while label.Parent do
+			Tween(label, {TextColor3 = Color3.fromRGB(0, 170, 255)}, 1):Play()
+			task.wait(1)
+			Tween(label, {TextColor3 = Color3.fromRGB(180, 220, 255)}, 1):Play()
+			task.wait(1)
+		end
+	end)
+end
+
+--// CREATE GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "IcysESP"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.DisplayOrder = 999
+ScreenGui.Parent = CoreGui
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.fromOffset(320, 380)
+MainFrame.Position = UDim2.fromScale(0.02, 0.3)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+MainFrame.Active = true
+MainFrame.Draggable = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 18)
+
+local mainStroke = Instance.new("UIStroke", MainFrame)
+mainStroke.Color = Color3.fromRGB(0, 170, 255)
+mainStroke.Transparency = 0.4
+
+local Header = Instance.new("TextLabel", MainFrame)
+Header.Size = UDim2.new(1, 0, 0, 40)
+Header.BackgroundTransparency = 1
+Header.Text = "Icy's ESP"
+Header.Font = Enum.Font.GothamBold
+Header.TextSize = 24
+Header.TextColor3 = Color3.fromRGB(0, 170, 255)
+AnimateText(Header)
+
+local Close = Instance.new("TextButton", MainFrame)
+Close.Text = "X"
+Close.Size = UDim2.fromOffset(30, 30)
+Close.Position = UDim2.new(1, -35, 0, 5)
+Close.BackgroundColor3 = Color3.fromRGB(190, 60, 60)
+Close.TextColor3 = Color3.new(1, 1, 1)
+Close.Font = Enum.Font.GothamBold
+Close.TextSize = 18
+Instance.new("UICorner", Close)
+
+Close.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
+end)
+
+local Minimize = Instance.new("TextButton", MainFrame)
+Minimize.Text = "-"
+Minimize.Size = UDim2.fromOffset(30, 30)
+Minimize.Position = UDim2.new(1, -70, 0, 5)
+Minimize.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+Minimize.TextColor3 = Color3.new(1, 1, 1)
+Minimize.Font = Enum.Font.GothamBold
+Minimize.TextSize = 18
+Instance.new("UICorner", Minimize)
+
+local minimized = false
+
+Minimize.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	if minimized then
+		Tween(MainFrame, {Size = UDim2.fromOffset(320, 60)}, 0.25):Play()
+	else
+		Tween(MainFrame, {Size = UDim2.fromOffset(320, 380)}, 0.25):Play()
+	end
+end)
+
+--// SCROLL FRAME
+local ScrollFrame = Instance.new("ScrollingFrame", MainFrame)
+ScrollFrame.Size = UDim2.new(1, -20, 1, -60)
+ScrollFrame.Position = UDim2.new(0, 10, 0, 50)
+ScrollFrame.BackgroundTransparency = 1
+ScrollFrame.BorderSizePixel = 0
+ScrollFrame.ScrollBarThickness = 6
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+local Layout = Instance.new("UIListLayout", ScrollFrame)
+Layout.Padding = UDim.new(0, 10)
+Layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+local Padding = Instance.new("UIPadding", ScrollFrame)
+Padding.PaddingTop = UDim.new(0, 10)
+Padding.PaddingBottom = UDim.new(0, 10)
+Padding.PaddingLeft = UDim.new(0, 10)
+Padding.PaddingRight = UDim.new(0, 10)
+
+--// HELPER FUNCTION TO CREATE TOGGLE
+local function CreateToggle(parent, labelText, defaultValue, callback)
+	local frame = Instance.new("Frame", parent)
+	frame.Size = UDim2.new(1, 0, 0, 50)
+	frame.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+	local label = Instance.new("TextLabel", frame)
+	label.Size = UDim2.new(1, -120, 1, 0)
+	label.Position = UDim2.new(0, 15, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = labelText
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 16
+	label.TextColor3 = Color3.fromRGB(220, 220, 230)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+
+	local toggle = Instance.new("TextButton", frame)
+	toggle.Size = UDim2.fromOffset(80, 32)
+	toggle.Position = UDim2.new(1, -95, 0.5, 0)
+	toggle.AnchorPoint = Vector2.new(0, 0.5)
+	toggle.BackgroundColor3 = defaultValue and Color3.fromRGB(60, 190, 60) or Color3.fromRGB(190, 60, 60)
+	toggle.Text = defaultValue and "ON" or "OFF"
+	toggle.Font = Enum.Font.GothamBold
+	toggle.TextSize = 14
+	toggle.TextColor3 = Color3.new(1, 1, 1)
+	Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 8)
+
+	local enabled = defaultValue
+	toggle.MouseButton1Click:Connect(function()
+		enabled = not enabled
+		callback(enabled)
+
+		if enabled then
+			toggle.Text = "ON"
+			toggle.BackgroundColor3 = Color3.fromRGB(60, 190, 60)
+		else
+			toggle.Text = "OFF"
+			toggle.BackgroundColor3 = Color3.fromRGB(190, 60, 60)
+		end
+	end)
+
+	return toggle
+end
+
+--// CREATE TOGGLES
+CreateToggle(ScrollFrame, "ESP Enabled", true, function(value)
+	ESPEnabled = value
+	for _, espData in pairs(ESPObjects) do
+		if espData.drawings then
+			for _, drawing in pairs(espData.drawings) do
+				if drawing then
+					drawing.Visible = value
 				end
 			end
 		end
 	end
 end)
 
--- ===== SAFE PART WAIT =====
-local function waitForParts(char)
-	local t = os.clock() + 10
-	while os.clock() < t do
-		local hum = char:FindFirstChildOfClass("Humanoid")
-		local head = char:FindFirstChild("Head")
-		local root = char:FindFirstChild("HumanoidRootPart")
-		if hum and head and root then
-			return hum, head, root
-		end
-		task.wait(0.1)
+CreateToggle(ScrollFrame, "Show Boxes", true, function(value)
+	ShowBoxes = value
+end)
+
+CreateToggle(ScrollFrame, "Show Names", true, function(value)
+	ShowNames = value
+end)
+
+CreateToggle(ScrollFrame, "Show Distance", true, function(value)
+	ShowDistance = value
+end)
+
+CreateToggle(ScrollFrame, "Show Health", true, function(value)
+	ShowHealth = value
+end)
+
+CreateToggle(ScrollFrame, "Show Tracers", false, function(value)
+	ShowTracers = value
+end)
+
+CreateToggle(ScrollFrame, "Team Check", false, function(value)
+	TeamCheck = value
+end)
+
+--// INFO LABEL
+local InfoLabel = Instance.new("TextLabel", ScrollFrame)
+InfoLabel.Size = UDim2.new(1, 0, 0, 60)
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.Text = "Icy's ESP - Enhanced visibility\nfor all players in the game."
+InfoLabel.Font = Enum.Font.Gotham
+InfoLabel.TextSize = 14
+InfoLabel.TextColor3 = Color3.fromRGB(150, 170, 200)
+InfoLabel.TextWrapped = true
+InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+InfoLabel.TextYAlignment = Enum.TextYAlignment.Top
+
+--// ESP FUNCTIONS
+local function GetTeamColor(player)
+	if player.Team then
+		return player.Team.TeamColor.Color
 	end
+	return Color3.fromRGB(255, 255, 255)
 end
 
--- ===== DRAWING LINE =====
-local function newLine()
-	local l = Drawing.new("Line")
-	l.Thickness = 2
-	l.Color = Color3.new(1,1,1)
-	l.Transparency = 1
-	l.Visible = false
-	return l
-end
+local function CreateESP(player)
+	if player == LocalPlayer then return end
 
--- ===== APPLY ESP =====
-local function applyESP(player, char)
-	if player == LocalPlayer or ACTIVE[char] then return end
-
-	local hum, head, root = waitForParts(char)
-	if not hum then return end
-
-	-- ===== Highlight =====
-	local hl = Instance.new("Highlight")
-	hl.Adornee = char
-	hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	hl.FillTransparency = 0.5
-	hl.OutlineTransparency = 0
-	hl.FillColor = player.TeamColor.Color
-	hl.Enabled = ESP_ENABLED
-	hl.Parent = workspace
-
-	player:GetPropertyChangedSignal("TeamColor"):Connect(function()
-		hl.FillColor = player.TeamColor.Color
-	end)
-
-	-- ===== Billboard =====
-	local gui = Instance.new("BillboardGui")
-	gui.Adornee = head
-	gui.Size = UDim2.new(0, 200, 0, 70)
-	gui.StudsOffset = Vector3.new(0, 3, 0)
-	gui.AlwaysOnTop = true
-	gui.Enabled = ESP_ENABLED
-	gui.Parent = workspace
-
-	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, 0, 0.45, 0)
-	nameLabel.BackgroundTransparency = 1
-	nameLabel.TextStrokeTransparency = 0
-	nameLabel.TextScaled = true
-	nameLabel.Font = Enum.Font.SourceSansBold
-	nameLabel.TextColor3 = Color3.new(1,1,1)
-	nameLabel.Parent = gui
-
-	local barBG = Instance.new("Frame")
-	barBG.Size = UDim2.new(1, -10, 0.15, 0)
-	barBG.Position = UDim2.new(0, 5, 0.55, 0)
-	barBG.BackgroundColor3 = Color3.fromRGB(40,40,40)
-	barBG.BorderSizePixel = 0
-	barBG.Parent = gui
-
-	local barFill = Instance.new("Frame")
-	barFill.Size = UDim2.new(1, 0, 1, 0)
-	barFill.BorderSizePixel = 0
-	barFill.BackgroundColor3 = Color3.fromRGB(0,255,0)
-	barFill.Parent = barBG
-
-	-- ===== Skeleton =====
-	local bones = {
-		{"Head","UpperTorso"},
-		{"UpperTorso","LowerTorso"},
-		{"UpperTorso","LeftUpperArm"},{"LeftUpperArm","LeftLowerArm"},{"LeftLowerArm","LeftHand"},
-		{"UpperTorso","RightUpperArm"},{"RightUpperArm","RightLowerArm"},{"RightLowerArm","RightHand"},
-		{"LowerTorso","LeftUpperLeg"},{"LeftUpperLeg","LeftLowerLeg"},{"LeftLowerLeg","LeftFoot"},
-		{"LowerTorso","RightUpperLeg"},{"RightUpperLeg","RightLowerLeg"},{"RightLowerLeg","RightFoot"}
+	local drawings = {
+		box = Drawing.new("Square"),
+		boxOutline = Drawing.new("Square"),
+		tracer = Drawing.new("Line"),
+		name = Drawing.new("Text"),
+		distance = Drawing.new("Text"),
+		health = Drawing.new("Text"),
+		healthBar = Drawing.new("Line"),
+		healthBarOutline = Drawing.new("Line")
 	}
 
-	local skeleton = {}
-	for _ = 1, #bones do table.insert(skeleton, newLine()) end
+	-- Box setup
+	drawings.box.Thickness = 2
+	drawings.box.Filled = false
+	drawings.box.Color = Color3.fromRGB(0, 170, 255)
+	drawings.box.Visible = false
+	drawings.box.ZIndex = 2
 
-	-- ===== Snapline =====
-	local snapline = newLine()
+	drawings.boxOutline.Thickness = 4
+	drawings.boxOutline.Filled = false
+	drawings.boxOutline.Color = Color3.fromRGB(0, 0, 0)
+	drawings.boxOutline.Visible = false
+	drawings.boxOutline.ZIndex = 1
 
-	-- ===== Update =====
-	local conn
-	conn = RunService.RenderStepped:Connect(function()
-		if not char.Parent or hum.Health <= 0 then return end
+	-- Tracer setup
+	drawings.tracer.Thickness = 2
+	drawings.tracer.Color = Color3.fromRGB(0, 170, 255)
+	drawings.tracer.Visible = false
 
-		local dist = (Camera.CFrame.Position - root.Position).Magnitude
-		nameLabel.Text = string.format(
-			"%s [%s]\n%.0f studs",
-			player.Name,
-			player.Team and player.Team.Name or "No Team",
-			dist
-		)
+	-- Name setup
+	drawings.name.Size = 14
+	drawings.name.Center = true
+	drawings.name.Outline = true
+	drawings.name.OutlineColor = Color3.fromRGB(0, 0, 0)
+	drawings.name.Color = Color3.fromRGB(255, 255, 255)
+	drawings.name.Visible = false
 
-		local hp = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-		barFill.Size = UDim2.new(hp, 0, 1, 0)
-		barFill.BackgroundColor3 = Color3.fromRGB(255*(1-hp),255*hp,0)
+	-- Distance setup
+	drawings.distance.Size = 12
+	drawings.distance.Center = true
+	drawings.distance.Outline = true
+	drawings.distance.OutlineColor = Color3.fromRGB(0, 0, 0)
+	drawings.distance.Color = Color3.fromRGB(200, 200, 200)
+	drawings.distance.Visible = false
 
-		-- Skeleton
-		for i,b in ipairs(bones) do
-			local p1 = char:FindFirstChild(b[1])
-			local p2 = char:FindFirstChild(b[2])
-			local line = skeleton[i]
-			if p1 and p2 then
-				local v1, on1 = Camera:WorldToViewportPoint(p1.Position)
-				local v2, on2 = Camera:WorldToViewportPoint(p2.Position)
-				line.Visible = ESP_ENABLED and on1 and on2
-				if line.Visible then
-					line.From = Vector2.new(v1.X, v1.Y)
-					line.To = Vector2.new(v2.X, v2.Y)
-					line.Color = player.TeamColor.Color
-				end
-			else
-				line.Visible = false
-			end
-		end
+	-- Health setup
+	drawings.health.Size = 12
+	drawings.health.Center = true
+	drawings.health.Outline = true
+	drawings.health.OutlineColor = Color3.fromRGB(0, 0, 0)
+	drawings.health.Color = Color3.fromRGB(0, 255, 0)
+	drawings.health.Visible = false
 
-		-- Snapline
-		local v, on = Camera:WorldToViewportPoint(root.Position)
-		snapline.Visible = ESP_ENABLED and on
-		if snapline.Visible then
-			snapline.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
-			snapline.To = Vector2.new(v.X, v.Y)
-			snapline.Color = player.TeamColor.Color
-		end
-	end)
+	-- Health bar setup
+	drawings.healthBar.Thickness = 3
+	drawings.healthBar.Color = Color3.fromRGB(0, 255, 0)
+	drawings.healthBar.Visible = false
 
-	-- Cleanup
-	char.AncestryChanged:Connect(function(_, p)
-		if not p then
-			conn:Disconnect()
-			hl:Destroy()
-			gui:Destroy()
-			for _,l in ipairs(skeleton) do l:Remove() end
-			snapline:Remove()
-			ACTIVE[char] = nil
-		end
-	end)
+	drawings.healthBarOutline.Thickness = 5
+	drawings.healthBarOutline.Color = Color3.fromRGB(0, 0, 0)
+	drawings.healthBarOutline.Visible = false
 
-	ACTIVE[char] = {hl, gui, skeleton, snapline}
+	ESPObjects[player] = {
+		drawings = drawings
+	}
 end
 
--- ===== PLAYER HANDLING =====
-local function setup(p)
-	p.CharacterAdded:Connect(function(c)
-		task.delay(0.2, function()
-			applyESP(p, c)
-		end)
-	end)
-	if p.Character then
-		task.delay(0.2, function()
-			applyESP(p, p.Character)
-		end)
+local function RemoveESP(player)
+	local espData = ESPObjects[player]
+	if espData then
+		for _, drawing in pairs(espData.drawings) do
+			if drawing then
+				drawing:Remove()
+			end
+		end
+		ESPObjects[player] = nil
 	end
 end
 
-for _,p in ipairs(Players:GetPlayers()) do setup(p) end
-Players.PlayerAdded:Connect(setup)
+local function UpdateESP()
+	for player, espData in pairs(ESPObjects) do
+		if not player or not player.Parent or not player.Character then
+			RemoveESP(player)
+			continue
+		end
+
+		local character = player.Character
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+		if not rootPart or not humanoid or humanoid.Health <= 0 then
+			for _, drawing in pairs(espData.drawings) do
+				drawing.Visible = false
+			end
+			continue
+		end
+
+		-- Team check
+		if TeamCheck and player.Team == LocalPlayer.Team then
+			for _, drawing in pairs(espData.drawings) do
+				drawing.Visible = false
+			end
+			continue
+		end
+
+		local vector, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+		
+		if onScreen and ESPEnabled then
+			local hrp2D = Camera:WorldToViewportPoint(rootPart.Position)
+			local head3D = character:FindFirstChild("Head")
+			local head2D = head3D and Camera:WorldToViewportPoint(head3D.Position + Vector3.new(0, 1, 0)) or hrp2D
+			
+			local legPosition = Camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0))
+			
+			local height = math.abs(head2D.Y - legPosition.Y)
+			local width = height / 2
+
+			local teamColor = GetTeamColor(player)
+
+			-- Update box
+			if ShowBoxes then
+				espData.drawings.box.Size = Vector2.new(width, height)
+				espData.drawings.box.Position = Vector2.new(hrp2D.X - width / 2, head2D.Y)
+				espData.drawings.box.Color = teamColor
+				espData.drawings.box.Visible = true
+
+				espData.drawings.boxOutline.Size = Vector2.new(width, height)
+				espData.drawings.boxOutline.Position = Vector2.new(hrp2D.X - width / 2, head2D.Y)
+				espData.drawings.boxOutline.Visible = true
+			else
+				espData.drawings.box.Visible = false
+				espData.drawings.boxOutline.Visible = false
+			end
+
+			-- Update tracer
+			if ShowTracers then
+				espData.drawings.tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+				espData.drawings.tracer.To = Vector2.new(hrp2D.X, legPosition.Y)
+				espData.drawings.tracer.Color = teamColor
+				espData.drawings.tracer.Visible = true
+			else
+				espData.drawings.tracer.Visible = false
+			end
+
+			-- Update name
+			if ShowNames then
+				espData.drawings.name.Text = player.Name
+				espData.drawings.name.Position = Vector2.new(hrp2D.X, head2D.Y - 20)
+				espData.drawings.name.Visible = true
+			else
+				espData.drawings.name.Visible = false
+			end
+
+			-- Update distance
+			if ShowDistance then
+				local distance = math.floor((LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude)
+				espData.drawings.distance.Text = distance .. " studs"
+				espData.drawings.distance.Position = Vector2.new(hrp2D.X, legPosition.Y + 5)
+				espData.drawings.distance.Visible = true
+			else
+				espData.drawings.distance.Visible = false
+			end
+
+			-- Update health
+			if ShowHealth then
+				local healthPercent = math.floor((humanoid.Health / humanoid.MaxHealth) * 100)
+				espData.drawings.health.Text = healthPercent .. "%"
+				espData.drawings.health.Position = Vector2.new(hrp2D.X, legPosition.Y + 20)
+				
+				if healthPercent > 75 then
+					espData.drawings.health.Color = Color3.fromRGB(0, 255, 0)
+				elseif healthPercent > 50 then
+					espData.drawings.health.Color = Color3.fromRGB(255, 255, 0)
+				elseif healthPercent > 25 then
+					espData.drawings.health.Color = Color3.fromRGB(255, 165, 0)
+				else
+					espData.drawings.health.Color = Color3.fromRGB(255, 0, 0)
+				end
+				
+				espData.drawings.health.Visible = true
+
+				-- Health bar
+				local barHeight = height * (humanoid.Health / humanoid.MaxHealth)
+				espData.drawings.healthBar.From = Vector2.new(hrp2D.X - width / 2 - 6, head2D.Y)
+				espData.drawings.healthBar.To = Vector2.new(hrp2D.X - width / 2 - 6, head2D.Y + height - barHeight)
+				espData.drawings.healthBar.Color = espData.drawings.health.Color
+				espData.drawings.healthBar.Visible = true
+
+				espData.drawings.healthBarOutline.From = Vector2.new(hrp2D.X - width / 2 - 6, head2D.Y)
+				espData.drawings.healthBarOutline.To = Vector2.new(hrp2D.X - width / 2 - 6, head2D.Y + height)
+				espData.drawings.healthBarOutline.Visible = true
+			else
+				espData.drawings.health.Visible = false
+				espData.drawings.healthBar.Visible = false
+				espData.drawings.healthBarOutline.Visible = false
+			end
+		else
+			for _, drawing in pairs(espData.drawings) do
+				drawing.Visible = false
+			end
+		end
+	end
+end
+
+--// PLAYER CONNECTIONS
+for _, player in ipairs(Players:GetPlayers()) do
+	if player ~= LocalPlayer then
+		CreateESP(player)
+	end
+end
+
+Players.PlayerAdded:Connect(function(player)
+	CreateESP(player)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	RemoveESP(player)
+end)
+
+--// RENDER LOOP
+RunService.RenderStepped:Connect(function()
+	UpdateESP()
+end)
+
+--// CLEANUP ON DESTROY
+ScreenGui.Destroying:Connect(function()
+	for player, _ in pairs(ESPObjects) do
+		RemoveESP(player)
+	end
+end)
